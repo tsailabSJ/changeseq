@@ -1,0 +1,22 @@
+reference_genome: /Users/shengdar/genomes/Homo_sapiens_assembly19.fasta
+analysis_folder: /Users/shengdar/Local/circleseq-test/merged
+
+bwa: bwa
+samtools: samtools
+
+read_threshold: 4
+window_size: 3
+mapq_threshold: 50
+start_threshold: 1
+gap_threshold: 3
+mismatch_threshold: 6
+merged_analysis: True
+
+samples:
+    U2OS_exp1_VEGFA_site_1:
+        target: GGGTGGGGGGAGTTTGCTCCNGG
+        read1: /Users/shengdar/Local/circleseq-test/1_S1_subset_100000_R1.fastq
+        read2: /Users/shengdar/Local/circleseq-test/1_S1_subset_100000_R2.fastq
+        controlread1: /Users/shengdar/Local/circleseq-test/4_S4_subset_R1.fastq
+        controlread2: /Users/shengdar/Local/circleseq-test/4_S4_subset_R2.fastq
+        description: U2OS_exp1_VEGFA_site_1
