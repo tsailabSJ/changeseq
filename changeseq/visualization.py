@@ -19,6 +19,8 @@ colors = {'G': '#F5F500', 'A': '#FF5454', 'T': '#00D118', 'C': '#26A8FF', 'N': '
 def parseSitesFile(infile):
     offtargets = []
     total_seq = 0
+    target_seq = ""
+
     with open(infile, 'r') as f:
         f.readline()
         for line in f:
