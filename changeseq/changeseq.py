@@ -23,10 +23,11 @@ class CircleSeq:
     def __init__(self):
         self.search_radius = 20
         self.window_size = 3
-        self.mapq_threshold = 0
+        self.mapq_threshold = 50
         self.start_threshold = 1
-        self.gap_threshold = 1
+        self.gap_threshold = 3
         self.mismatch_threshold = 6
+        self.read_threshold = 6
         self.merged_analysis = True
         self.all_chromosomes = False
         self.variant_analysis = False
@@ -58,6 +59,8 @@ class CircleSeq:
                 self.gap_threshold = manifest_data['gap_threshold']
             if 'mismatch_threshold' in manifest_data:
                 self.mismatch_threshold = manifest_data['mismatch_threshold']
+            if 'read_threshold' in manifest_data:
+                self.mismatch_threshold = manifest_data['read_threshold']
             if 'merged_analysis' in manifest_data:
                 self.merged_analysis = manifest_data['merged_analysis']
             if 'all_chromosomes' in manifest_data:
@@ -238,7 +241,7 @@ def parse_args():
 
     parallel_parser = subparsers.add_parser('parallel', help='Run all steps of the pipeline in parallel')
     parallel_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
-    parallel_parser.add_argument('--lsf', '-l', help='Specify LSF CMD', default='bsub -R rusage[mem=8000]')
+    parallel_parser.add_argument('--lsf', '-l', help='Specify LSF CMD', default='bsub -R rusage[mem=32000] -P Genomics -q standard')
     parallel_parser.add_argument('--run', '-r', help='Specify which steps of pipepline to run (all, align, identify, visualize, variants)', default='all')
 
     align_parser = subparsers.add_parser('align', help='Run alignment only')

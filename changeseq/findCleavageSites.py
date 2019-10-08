@@ -322,23 +322,26 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
         for key in tags_sorted:
             row = matched_dict[key]
 
-            pos_pval_list, nar_pval_list = list(), list()
-            control_pos_pval_list, control_nar_pval_list = list(), list()
+            # pos_pval_list, nar_pval_list = list(), list()
+            # control_pos_pval_list, control_nar_pval_list = list(), list()
+            #
+            # iv_pval = HTSeq.GenomicInterval(row[0], int(row[1]), int(row[2]), '.')
+            # for interval, value in ga_pval[iv_pval].steps():
+            #     if value is not None:
+            #         pos_pval_list.append(value[0])
+            #         nar_pval_list.append(value[1])
+            #         control_pos_pval_list.append(value[2])
+            #         control_nar_pval_list.append(value[3])
+            #
+            # pval_pos = min(pos_pval_list)
+            # pval_nar = min(nar_pval_list)
+            # control_pval_pos = min(control_pos_pval_list)
+            # control_pval_nar = min(control_nar_pval_list)
 
-            iv_pval = HTSeq.GenomicInterval(row[0], int(row[1]), int(row[2]), '.')
-            for interval, value in ga_pval[iv_pval].steps():
-                if value is not None:
-                    pos_pval_list.append(value[0])
-                    nar_pval_list.append(value[1])
-                    control_pos_pval_list.append(value[2])
-                    control_nar_pval_list.append(value[3])
+            #print(*(row + [pval_pos, pval_nar, control_pval_pos, control_pval_nar]), sep='\t', file=o1)
 
-            pval_pos = min(pos_pval_list)
-            pval_nar = min(nar_pval_list)
-            control_pval_pos = min(control_pos_pval_list)
-            control_pval_nar = min(control_nar_pval_list)
+            print(*(row), sep='\t', file=o1)
 
-            print(*(row + [pval_pos, pval_nar, control_pval_pos, control_pval_nar]), sep='\t', file=o1)
 
     # Write unmatched table
     print("Writing unmatched table", file=sys.stderr)
@@ -349,23 +352,23 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
         for unkey in untags_sorted:
             unrow = unmatched_dict[unkey]
 
-            un_pos_pval_list, un_nar_pval_list = list(), list()
-            un_control_pos_pval_list, un_control_nar_pval_list = list(), list()
+            # un_pos_pval_list, un_nar_pval_list = list(), list()
+            # un_control_pos_pval_list, un_control_nar_pval_list = list(), list()
+            #
+            # iv_pval = HTSeq.GenomicInterval(unrow[0], int(unrow[1]), int(unrow[2]), '.')
+            # for interval, value in ga_pval[iv_pval].steps():
+            #     if value is not None:
+            #         un_pos_pval_list.append(value[0])
+            #         un_nar_pval_list.append(value[1])
+            #         un_control_pos_pval_list.append(value[2])
+            #         un_control_nar_pval_list.append(value[3])
+            #
+            # un_pval_pos = min(un_pos_pval_list)
+            # un_pval_nar = min(un_nar_pval_list)
+            # un_control_pval_pos = min(un_control_pos_pval_list)
+            # un_control_pval_nar = min(un_control_nar_pval_list)
 
-            iv_pval = HTSeq.GenomicInterval(unrow[0], int(unrow[1]), int(unrow[2]), '.')
-            for interval, value in ga_pval[iv_pval].steps():
-                if value is not None:
-                    un_pos_pval_list.append(value[0])
-                    un_nar_pval_list.append(value[1])
-                    un_control_pos_pval_list.append(value[2])
-                    un_control_nar_pval_list.append(value[3])
-
-            un_pval_pos = min(un_pos_pval_list)
-            un_pval_nar = min(un_nar_pval_list)
-            un_control_pval_pos = min(un_control_pos_pval_list)
-            un_control_pval_nar = min(un_control_nar_pval_list)
-
-            print(*(unrow + [un_pval_pos, un_pval_nar, un_control_pval_pos, un_control_pval_nar]), sep='\t', file=o2)
+            print(*(unrow), sep='\t', file=o2)
 
 
 """ Reverse complement DNA sequence
@@ -607,7 +610,7 @@ def compare(ref, bam, control, targetsite, search_radius, windowsize, mapq_thres
               'p_Value', 'narrow_p_Value', 'control_p_Value', 'control_narrow_p_Value', file=o, sep='\t')
 
         # Empirical cdf
-        print(bg_position, bg_narrow)
+        #print(bg_position, bg_narrow)
         ecdf_pos = ECDF(bg_position)
         ecdf_nar = ECDF(bg_narrow)
 
@@ -624,7 +627,8 @@ def compare(ref, bam, control, targetsite, search_radius, windowsize, mapq_thres
             control_position_p_val = 1 - ecdf_pos(fields[3])
             control_narrow_p_val = 1 - ecdf_nar(fields[5])
 
-            if narrow_p_val < 0.01 or position_p_val < 0.01:
+            #if narrow_p_val < 0.01 or position_p_val < 0.01:
+            if fields[2] >= 6 or fields[4] >= 6:  # fields[2] is nuclease_position_counts and fields[4] is nuclease_window_counts
                 read_chr = fields[0]
                 read_position = fields[1]
                 offtarget_ga_windows[HTSeq.GenomicPosition(read_chr, read_position, '.')] = 1
