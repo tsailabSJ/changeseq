@@ -63,7 +63,7 @@ class CircleSeq:
             if 'mismatch_threshold' in manifest_data:
                 self.mismatch_threshold = manifest_data['mismatch_threshold']
             if 'read_threshold' in manifest_data:
-                self.mismatch_threshold = manifest_data['read_threshold']
+                self.read_threshold = manifest_data['read_threshold']
             if 'merged_analysis' in manifest_data:
                 self.merged_analysis = manifest_data['merged_analysis']
             if 'all_chromosomes' in manifest_data:
