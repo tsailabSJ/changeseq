@@ -7,13 +7,13 @@ import pyfaidx
 import regex
 from statsmodels.distributions.empirical_distribution import ECDF
 import sys
-
+import numpy as np
 
 """ Tabulate merged start positions.
     Identify genomic coordinates for reads mapping across 151/152 bp position.
     Add positions to genomic array.
 """
-def tabulate_merged_start_positions(BamFileName, cells, name, targetsite, mapq_threshold, gap_threshold, start_threshold, outfile_base, pattern, all_chromosomes):
+def tabulate_merged_start_positions(BamFileName, cells, name, targetsite, mapq_threshold, gap_threshold, start_threshold, outfile_base, pattern, all_chromosomes,read_length=151):
     output_filename = '{0}_coordinates.txt'.format(outfile_base)
 
     sorted_bam_file = HTSeq.BAM_Reader(BamFileName)
@@ -43,20 +43,21 @@ def tabulate_merged_start_positions(BamFileName, cells, name, targetsite, mapq_t
                     # Identify positions that end in position 151 and start at position 151
                     # Note strand polarity is reversed for position 151 (because it is part of the strand that was
                     # reverse complemented initially before alignment
+                    # Yichao , replace 151 with read_length, replace 146, 156 as +-5, 5/12/2020                    
                     if cigar_operation.type == 'M':
-                        if ((cigar_operation.query_from <= 146 - start_threshold) and
-                                (151 - start_threshold <= cigar_operation.query_to)):
+                        if ((cigar_operation.query_from <= (read_length-5) - start_threshold) and
+                                (read_length - start_threshold <= cigar_operation.query_to)):
                             first_read_cigar = cigar_operation
                             first_read_chr = cigar_operation.ref_iv.chrom
-                            first_end = min(cigar_operation.query_to, 151)
+                            first_end = min(cigar_operation.query_to, read_length)
                             distance = first_end - cigar_operation.query_from
                             first_read_position = cigar_operation.ref_iv.start + distance - 1
                             first_read_strand = '-'
-                        if ((cigar_operation.query_from <= 151 + start_threshold) and
-                                (156 + start_threshold <= cigar_operation.query_to)):
+                        if ((cigar_operation.query_from <= read_length + start_threshold) and
+                                ((read_length+5)  + start_threshold <= cigar_operation.query_to)):
                             second_read_cigar = cigar_operation
                             second_read_chr = cigar_operation.ref_iv.chrom
-                            second_end = max(151, cigar_operation.query_from)
+                            second_end = max(read_length, cigar_operation.query_from)
                             distance = second_end - cigar_operation.query_from
                             second_read_position = cigar_operation.ref_iv.start + distance
                             second_read_strand = '+'
@@ -300,6 +301,8 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
                                          filename, target_cells, target_name, full_name, target_sequence, 'none']
 
     # Write matched table
+    
+    # Yichao, add control reads
     print("Writing matched table", file=sys.stderr)
     tags_sorted = matched_dict.keys()
     tags_sorted.sort()
@@ -314,13 +317,25 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
           'Site_GapsAllowed.Substitutions', 'Site_GapsAllowed.Insertions', 'Site_GapsAllowed.Deletions',  # 18:20
           'Site_GapsAllowed.Strand', 'Site_GapsAllowed.Start', 'Site_GapsAllowed.End',  #21:23
           'FileName', 'Cell', 'Targetsite', 'FullName', 'TargetSequence', 'RealignedTargetSequence',  # 24:29
-          'Position.Pvalue', 'Narrow.Pvalue', 'Position.Control.Pvalue', 'Narrow.Control.Pvalue',  # 30:33
+          'Position.Pvalue', 'Narrow.Pvalue', 'Position.Control.Pvalue', 'Narrow.Control.Pvalue','control_position_counts','control_window_counts',  # 30:33
           sep='\t', file=o1)
     o1.close()
 
     with open(outfile_matched, 'a') as o1:
         for key in tags_sorted:
             row = matched_dict[key]
+            
+            control_position_counts, control_window_counts = list(), list()
+            
+            iv_pval = HTSeq.GenomicInterval(row[0], int(row[1]), int(row[2]), '.')
+            for interval, value in ga_pval[iv_pval].steps():
+                 if value is not None:
+                     control_position_counts.append(value[3])
+                     control_window_counts.append(value[5])
+            
+
+            control_position_counts = np.mean(control_position_counts)
+            control_window_counts = np.mean(control_window_counts)
 
             # pos_pval_list, nar_pval_list = list(), list()
             # control_pos_pval_list, control_nar_pval_list = list(), list()
@@ -340,7 +355,8 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
 
             #print(*(row + [pval_pos, pval_nar, control_pval_pos, control_pval_nar]), sep='\t', file=o1)
 
-            print(*(row), sep='\t', file=o1)
+            # print(*(row), sep='\t', file=o1)
+            print(*(row)+[control_position_counts,control_window_counts], sep='\t', file=o1)
 
 
     # Write unmatched table
@@ -421,34 +437,65 @@ def extendedPattern(seq, errors):
 Recreate A!!! sequence in the window_sequence that matches the conditions given for the fuzzy regex. 
 Currently only working for off-targets with at most one bulge !!! 
 """
+## Yichao: Fix the code to get the 'realigned target sequence' to use the new feature in regex library that provides fuzzy_changes
 def realignedSequences(targetsite_sequence, chosen_alignment, errors):
-    match_sequence = chosen_alignment.group()
-    substitutions, insertions, deletions = chosen_alignment.fuzzy_counts
 
-    # get the .fuzzy_counts associated to the matching sequence after adjusting for indels, where 0 <= INS, DEL <= 1
-    realigned_fuzzy = (substitutions, max(0, insertions - 1), max(0, deletions - 1))
-
-    #  recreate the target sequence, with a '-' in the case of an DNA-bulge
-    if insertions:
-        targetsite_realignments = [targetsite_sequence[:i] + '-' + targetsite_sequence[i:] for i in range(1, len(targetsite_sequence))]
-    else:
-        targetsite_realignments = [targetsite_sequence]
-
-    realigned_target_sequence, realigned_offtarget_sequence = None, ''  # in case the matching sequence is not founded
-
-    for seq in targetsite_realignments:
-        # recreate off-target sequence (with a '-' in the case of an RNA-bulge) and pattern matching the realigned target sequence
-        if deletions:
-            match_realignments = [match_sequence[:i + 1] + '-' + match_sequence[i + 1:] for i in range(len(match_sequence) - 1)]
-            match_pattern = [match_sequence[:i + 1] + seq[i + 1] + match_sequence[i + 1:] for i in range(len(match_sequence) - 1)]
-        else:
-            match_realignments = match_pattern = [match_sequence]
-
-        x = extendedPattern(seq, errors)
-        for y_pattern, y_alignment in zip(match_pattern, match_realignments):
-            m = regex.search(x, y_pattern, regex.BESTMATCH)
-            if m and m.fuzzy_counts == realigned_fuzzy:
-                realigned_target_sequence, realigned_offtarget_sequence = seq, y_alignment
+    m = chosen_alignment.group()
+    q = targetsite_sequence
+    substitutions, insertions, deletions = chosen_alignment.fuzzy_changes
+    
+    start = chosen_alignment.span()[0]    
+    indels = {}
+    # deletion index is for targetsite_sequence
+    # insertion index is for match sequence
+    insertions = [i-start for i in insertions]
+    deletions = [i-start for i in deletions]
+    q_list = []
+    m_list = []
+    for i in insertions:
+        indels[i] = True
+    for d in deletions:
+        indels[d] = False
+    
+    count = 0
+    q_index = 0
+    m_index = 0
+    count = 0
+    while q_index < len(q) or m_index < len(m):
+        if q_index in indels:    
+            if not indels[q_index]:
+                m_list.append("-")
+                q_list.append(q[q_index])
+                q_index+=1    
+                count+=1
+                continue
+        if m_index in indels:
+            if indels[m_index]:
+                q_list.append("-")
+                m_list.append(m[m_index])
+                
+                ## update indel dict, I found the deletion positions are relative if insertion occurs first
+                update_indels=[]
+                for k in indels.keys():
+                    if k > m_index:
+                        if not indels[k]:
+                            del indels[k]
+                            update_indels.append(k-1)
+                for u in update_indels:
+                    indels[u] = False
+                m_index+=1    
+                count+=1
+                continue
+        m_list.append(m[m_index])
+        q_list.append(q[q_index])        
+        q_index+=1
+        m_index+=1
+        count+=1
+    
+    realigned_target_sequence = "".join(q_list)
+    realigned_offtarget_sequence =  "".join(m_list)
+    
+    
     return realigned_target_sequence, realigned_offtarget_sequence
 
 
@@ -532,7 +579,7 @@ def get_sequence(reference_genome, chromosome, start, end, strand="+"):
 
 
 def compare(ref, bam, control, targetsite, search_radius, windowsize, mapq_threshold, gap_threshold, start_threshold, mismatch_threshold, name,
-            cells, out, all_chromosomes, merged=True):
+            cells, out, all_chromosomes, merged=True,read_count_cutoff=6,read_length=151):
 
     output_list = list()
 
@@ -557,11 +604,11 @@ def compare(ref, bam, control, targetsite, search_radius, windowsize, mapq_thres
             print("Tabulate nuclease merged start positions.", file=sys.stderr)
             nuclease_ga, nuclease_ga_windows, nuclease_ga_stranded, nuclease_ga_coverage, total_nuclease_count = \
                 tabulate_merged_start_positions(bam, cells, name, targetsite, mapq_threshold, gap_threshold,
-                                                start_threshold, out + '_NUCLEASE', pattern, all_chromosomes)
+                                                start_threshold, out + '_NUCLEASE', pattern, all_chromosomes, read_length)
             print("Tabulate control merged start positions.", file=sys.stderr)
             control_ga, control_ga_windows, control_ga_stranded, control_ga_coverage, total_control_count = \
                 tabulate_merged_start_positions(control, cells, name, targetsite, mapq_threshold, gap_threshold,
-                                                start_threshold, out + '_CONTROL', pattern, all_chromosomes)
+                                                start_threshold, out + '_CONTROL', pattern, all_chromosomes, read_length)
         else:
             print("Tabulate nuclease standard start positions.", file=sys.stderr)
             nuclease_ga, nuclease_ga_windows, nuclease_ga_stranded, nuclease_ga_coverage, total_nuclease_count = \
@@ -628,7 +675,8 @@ def compare(ref, bam, control, targetsite, search_radius, windowsize, mapq_thres
             control_narrow_p_val = 1 - ecdf_nar(fields[5])
 
             #if narrow_p_val < 0.01 or position_p_val < 0.01:
-            if fields[2] >= 6 or fields[4] >= 6:  # fields[2] is nuclease_position_counts and fields[4] is nuclease_window_counts
+            ## read threshold is here: Yichao, read_count_cutoff
+            if fields[2] >= read_count_cutoff or fields[4] >= read_count_cutoff:  # fields[2] is nuclease_position_counts and fields[4] is nuclease_window_counts
                 read_chr = fields[0]
                 read_position = fields[1]
                 offtarget_ga_windows[HTSeq.GenomicPosition(read_chr, read_position, '.')] = 1
@@ -638,7 +686,8 @@ def compare(ref, bam, control, targetsite, search_radius, windowsize, mapq_thres
                   file=o, sep='\t')
 
             chr_pos = HTSeq.GenomicPosition(fields[0], int(fields[1]), '.')
-            ga_pval[chr_pos] = [position_p_val, narrow_p_val, control_position_p_val, control_narrow_p_val]
+            ## Yichao, add control read count
+            ga_pval[chr_pos] = [position_p_val, narrow_p_val, control_position_p_val, control_narrow_p_val,fields[3],fields[5]]
 
         ga_consolidated_windows = find_windows(offtarget_ga_windows, windowsize)    # consolidate windows within 3 bp
 
@@ -657,6 +706,8 @@ def main():
     parser.add_argument('--gap', help='Gap threshold', default=3, type=int)
     parser.add_argument('--start', help='Start threshold', default=1 , type=int)
     parser.add_argument('--mismatch_threshold', help='Maximum score threshold', default=6, type=int)
+    parser.add_argument('--read_count_cutoff', help='read_count threshold', default=6, type=int)
+    parser.add_argument('--read_length', help='read_length', default=151, type=int)    
     parser.add_argument('--merged', dest='merged', action='store_true', default=True)
     parser.add_argument('--all_chromosomes', dest='all_chromosomes', action='store_true', default=False)
     parser.add_argument('--name', help='Targetsite Name', required=False)
@@ -667,7 +718,7 @@ def main():
     # Run the comparison if the control bam is specified, otherwise run the standard site identification routine.
     print("Nuclease: {0}\nControl: {1}".format(args.bam, args.control), file=sys.stderr)
     compare(args.ref, args.bam, args.control, args.targetsite, args.search_radius, args.windowsize, args.mapq, args.gap,
-            args.start, args.mismatch_threshold, args.name, args.cells, args.out, args.all_chromosomes, args.merged)
+            args.start, args.mismatch_threshold, args.name, args.cells, args.out, args.all_chromosomes, args.merged,args.read_count_cutoff)
 
 if __name__ == "__main__":
     main()

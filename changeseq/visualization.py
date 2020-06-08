@@ -1,5 +1,5 @@
 from __future__ import print_function
-
+    
 import svgwrite
 import os
 import logging
@@ -14,13 +14,14 @@ boxWidth = 10
 box_size = 15
 v_spacing = 3
 
-colors = {'G': '#F5F500', 'A': '#FF5454', 'T': '#00D118', 'C': '#26A8FF', 'N': '#B3B3B3', '-': '#B3B3B3'}
-
+# colors = {'G': '#F5F500', 'A': '#FF5454', 'T': '#00D118', 'C': '#26A8FF', 'N': '#B3B3B3', '-': '#B3B3B3'}
+colors = {'G': '#F5F500', 'A': '#FF5454', 'T': '#00D118', 'C': '#26A8FF', 'N': '#B3B3B3', 'R': '#B3B3B3', '-': '#B3B3B3'}
+for c in ['Y','S','W','K','M','B','D','H','V','.']:
+    colors[c] = "#B3B3B3"
+    
 def parseSitesFile(infile):
     offtargets = []
     total_seq = 0
-    target_seq = ""
-
     with open(infile, 'r') as f:
         f.readline()
         for line in f:
@@ -46,8 +47,19 @@ def parseSitesFile(infile):
     offtargets = sorted(offtargets, key=lambda x: x['reads'], reverse=True)
     return offtargets, target_seq, total_seq
 
+# 3/6/2020 Yichao
+def check_mismatch(a,b):
+    from Bio.Data import IUPACData
+    dna_dict = IUPACData.ambiguous_dna_values
+    set_a = dna_dict[a.upper()]
+    set_b = dna_dict[b.upper()]
+    overlap = list(set(list(set_a)).intersection(list(set_b)))
+    if len(overlap) == 0:
+        return True
+    else:
+        return False
 
-def visualizeOfftargets(infile, outfile, title):
+def visualizeOfftargets(infile, outfile, title, PAM):
 
     output_folder = os.path.dirname(outfile)
     if not os.path.exists(output_folder):
@@ -70,26 +82,41 @@ def visualizeOfftargets(infile, outfile, title):
         y_offset = 20
 
     # Draw ticks
-    if target_seq.find('N') >= 0:
-        p = target_seq.index('N')
-        if p > len(target_seq) / 2:  # PAM on the right end
-            tick_locations = [1, len(target_seq)] + range(p, len(target_seq))  # limits and PAM
-            tick_locations += [x + p - 20 + 1 for x in range(p)[::10][1:]]  # intermediate values
-            tick_locations = list(set(tick_locations))
-            tick_locations.sort()
-            tick_legend = [p, 10, 1] + ['P', 'A', 'M']
-        else:
-            tick_locations = range(2, 6) + [14, len(target_seq)]  # complementing PAM and limits
-            tick_legend = ['P', 'A', 'M', '1', '10'] + [str(len(target_seq) - 4)]
+    # if target_seq.find('N') >= 0:
+        # p = target_seq.index('N')
+        # if p > len(target_seq) / 2:  # PAM on the right end
+            # tick_locations = [1, len(target_seq)] + range(p, len(target_seq))  # limits and PAM
+            # tick_locations += [x + p - 20 + 1 for x in range(p)[::10][1:]]  # intermediate values
+            # tick_locations = list(set(tick_locations))
+            # tick_locations.sort()
+            # tick_legend = [p, 10, 1] + ['P', 'A', 'M']
+        # else:
+            # tick_locations = range(2, 6) + [14, len(target_seq)]  # complementing PAM and limits
+            # tick_legend = ['P', 'A', 'M', '1', '10'] + [str(len(target_seq) - 4)]
 
-        for x, y in zip(tick_locations, tick_legend):
-            dwg.add(dwg.text(y, insert=(x_offset + (x - 1) * box_size + 2, y_offset - 2), style="font-size:10px; font-family:Courier"))
-    else:
-        tick_locations = [1, len(target_seq)]  # limits
-        tick_locations += range(len(target_seq) + 1)[::10][1:]
-        tick_locations.sort()
-        for x in tick_locations:
-            dwg.add(dwg.text(str(x), insert=(x_offset + (x - 1) * box_size + 2, y_offset - 2), style="font-size:10px; font-family:Courier"))
+        # for x, y in zip(tick_locations, tick_legend):
+            # dwg.add(dwg.text(y, insert=(x_offset + (x - 1) * box_size + 2, y_offset - 2), style="font-size:10px; font-family:Courier"))
+    # else:
+        # tick_locations = [1, len(target_seq)]  # limits
+        # tick_locations += range(len(target_seq) + 1)[::10][1:]
+        # tick_locations.sort()
+        # for x in tick_locations:
+            # dwg.add(dwg.text(str(x), insert=(x_offset + (x - 1) * box_size + 2, y_offset - 2), style="font-size:10px; font-family:Courier"))
+    ## Assume PAM is on the right end Yichao rewrite visualization code, generic PAM
+    tick_locations = []
+    tick_legend = []
+    PAM_index = target_seq.index(PAM)
+    count = 0
+    for i in range(PAM_index,0,-1):
+        count = count+1
+        if count % 10 == 0:
+            tick_legend.append(count)
+            tick_locations.append(i)
+    tick_legend+=['P', 'A', 'M']+['-']*(len(PAM)-3)
+    tick_locations+=range(PAM_index+1,len(target_seq)+1)
+    
+    for x,y in zip(tick_locations, tick_legend):
+        dwg.add(dwg.text(y, insert=(x_offset + (x - 1) * box_size + 2, y_offset - 2), style="font-size:10px; font-family:Courier"))
 
     # Draw reference sequence row
     for i, c in enumerate(target_seq):
@@ -168,11 +195,12 @@ def main():
     parser.add_argument("--identified_file", help="FullPath/output file from reAlignment_circleseq.py", required=True)
     parser.add_argument("--outfile", help="FullPath/VIZ", required=True)
     parser.add_argument("--title", help="Plot title", required=True)
+    parser.add_argument("--PAM", help="PAM sequence", default="NGG")    
     args = parser.parse_args()
 
     print(args)
 
-    visualizeOfftargets(args.identified_file, args.outfile, args.title)
+    visualizeOfftargets(args.identified_file, args.outfile, args.title, args.PAM)
 
 if __name__ == "__main__":
 

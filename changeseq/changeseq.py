@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+
 """
 circleseq.py as the wrapper for CIRCLE-seq analysis
 """
@@ -67,6 +70,21 @@ class CircleSeq:
                 self.all_chromosomes = manifest_data['all_chromosomes']
             if 'variant_analysis' in manifest_data:
                 self.variant_analysis = manifest_data['variant_analysis']
+            # Allow the user to specify PAM seq. Yichao 4/29/2020
+            if 'PAM' in manifest_data:
+                self.PAM = manifest_data['PAM']
+            else:
+                self.PAM = "NGG"
+            # Allow the user to specify Read Length. Yichao 4/29/2020
+            if 'read_length' in manifest_data:
+                self.read_length = manifest_data['read_length']
+            else:
+                self.read_length = 151
+            # Allow the user to specify Read Count cutoff. Yichao 4/29/2020
+            if 'read_count_cutoff' in manifest_data:
+                self.read_count_cutoff = manifest_data['read_count_cutoff']
+            else:
+                self.read_count_cutoff = 6
 
             # Do not allow to run variant_analysis with merged_analysis
             if self.merged_analysis and self.variant_analysis:
@@ -177,18 +195,30 @@ class CircleSeq:
     def visualize(self):
         logger.info('Visualizing off-target sites')
 
-        try:
-            for sample in self.samples:
-                if sample != 'control':
+        # try:
+            # for sample in self.samples:
+                # if sample != 'control':
+                    # infile = os.path.join(self.analysis_folder, 'identified', sample + '_identified_matched.txt')
+                    # outfile = os.path.join(self.analysis_folder, 'visualization', sample + '_offtargets')
+                    # visualizeOfftargets(infile, outfile, title=sample)
+
+            # logger.info('Finished visualizing off-target sites')
+
+        # except Exception as e:
+            # logger.error('Error visualizing off-target sites.')
+            # logger.error(traceback.format_exc())
+
+        for sample in self.samples: ## 4/29/2020 Yichao solved: visualization stopped when sample has no off-target
+            if sample != 'control':
+                try:
                     infile = os.path.join(self.analysis_folder, 'identified', sample + '_identified_matched.txt')
                     outfile = os.path.join(self.analysis_folder, 'visualization', sample + '_offtargets')
-                    visualizeOfftargets(infile, outfile, title=sample)
+                    visualizeOfftargets(infile, outfile, title=sample,PAM=self.PAM)
+                except Exception as e:
+                    logger.error('Error visualizing off-target sites: %s'%(sample))
+                    logger.error(traceback.format_exc())
+        logger.info('Finished visualizing off-target sites')
 
-            logger.info('Finished visualizing off-target sites')
-
-        except Exception as e:
-            logger.error('Error visualizing off-target sites.')
-            logger.error(traceback.format_exc())
 
     def callVariants(self):
 
