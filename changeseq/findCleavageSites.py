@@ -44,24 +44,23 @@ def tabulate_merged_start_positions(BamFileName, cells, name, targetsite, mapq_t
                     # Note strand polarity is reversed for position 151 (because it is part of the strand that was
                     # reverse complemented initially before alignment
                     # Yichao , replace 151 with read_length, replace 146, 156 as +-5, 5/12/2020                    
-                    if cigar_operation.type == 'M':
-                        if ((cigar_operation.query_from <= (read_length-5) - start_threshold) and
-                                (read_length - start_threshold <= cigar_operation.query_to)):
+                    if cigar_operation.type == 'M' and cigar_operation.query_to - cigar_operation.query_from >= 5:
+                        if (read_length - start_threshold <= cigar_operation.query_to <= read_length + start_threshold) :
                             first_read_cigar = cigar_operation
                             first_read_chr = cigar_operation.ref_iv.chrom
                             first_end = min(cigar_operation.query_to, read_length)
                             distance = first_end - cigar_operation.query_from
                             first_read_position = cigar_operation.ref_iv.start + distance - 1
                             first_read_strand = '-'
-                        if ((cigar_operation.query_from <= read_length + start_threshold) and
-                                ((read_length+5)  + start_threshold <= cigar_operation.query_to)):
+                            pass
+                        if (read_length - start_threshold <= cigar_operation.query_from <= read_length + start_threshold):
                             second_read_cigar = cigar_operation
                             second_read_chr = cigar_operation.ref_iv.chrom
                             second_end = max(read_length, cigar_operation.query_from)
                             distance = second_end - cigar_operation.query_from
                             second_read_position = cigar_operation.ref_iv.start + distance
                             second_read_strand = '+'
-
+                            pass
                 if first_read_chr:
                     if first_read_chr == second_read_chr and (pattern.match(str(first_read_chr)) or all_chromosomes) and \
                                     first_read_position is not None and second_read_position is not None:
