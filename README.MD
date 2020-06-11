@@ -1,3 +1,6 @@
+
+![version](https://anaconda.org/tsailabsj/changeseq/badges/version.svg)
+
 # CHANGE-seq: Circularization for High-throughput Analysis Nuclease Genome-wide Effects by Sequencing
 
 This is a repository for CHANGE-seq analytical software, which takes sample-specific paired-end FASTQ files as input and produces a list of CHANGE-seq detected off-target cleavage sites as output.
@@ -13,7 +16,7 @@ This package implements a pipeline that takes in reads from the CHANGE-seq assay
 
 # Installation
 
-The most easiest way to install change-seq pipeline is via conda. (TODO)
+The most easiest way to install change-seq pipeline is via conda.
 
 ```
 
@@ -38,6 +41,8 @@ pip install -r requirements.txt
 python setup.py install
 
 changeseq.py -h
+
+## Please install BWA and samtools if you choose this option
 
 ```
 
