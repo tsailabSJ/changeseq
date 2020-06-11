@@ -29,7 +29,6 @@ requirements:
     - pysam
     - pyyaml
     - regex
-    - samtools=1.7
     - scipy
     - setuptools
     - sqlite
@@ -37,6 +36,8 @@ requirements:
     - svgwrite
     - yaml
     - zlib
+    - htslib=1.9
+    - samtools=1.9
 
 test:
   imports:
