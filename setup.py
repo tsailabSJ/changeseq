@@ -14,7 +14,7 @@ else:
 
 setup(
 	name='changeseq',
-	version='1.2.3',
+	version='1.2.4',
 	description="Bioinformatic pipeline for the CHANGE-seq assay.",
 	author="Shengdar Q Tsai, Martin Aryee, Ved V Topkar, Jose Malagon-Lopez",
 	author_email='STSAI4@mgh.harvard.edu, Aryee.Martin@mgh.harvard.edu, vedtopkar@gmail.com, jose.lopez@mail.harvard.edu',
