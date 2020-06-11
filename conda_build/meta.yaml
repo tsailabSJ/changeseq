@@ -1,0 +1,56 @@
+{% set name = "changeseq" %}
+{% set version = "1.2.3" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: fd28782a2b012dedc2ce862a2c87c551d3a83a153d61df5aab76db27a9cd4fdf
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv "
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - python
+    - bwa=0.7.17
+    - htseq
+    - matplotlib
+    - numpy
+    - pandas
+    - pyfaidx
+    - pygments
+    - pysam
+    - pyyaml
+    - regex
+    - samtools=1.7
+    - scipy
+    - setuptools
+    - sqlite
+    - statsmodels
+    - svgwrite
+    - yaml
+    - zlib
+
+test:
+  imports:
+    - changeseq
+
+about:
+  home: https://github.com/tsailabSJ/changeseq
+  license: GNU General Public v2 (GPLv2)
+  license_family: GPL2
+  license_file: 
+  summary: Bioinformatic pipeline for the CHANGE-seq assay.
+  doc_url: 
+  dev_url: 
+
+extra:
+  recipe-maintainers:
+    - YichaoOU
