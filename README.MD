@@ -17,11 +17,9 @@ The most easiest way to install change-seq pipeline is via conda. (TODO)
 
 ```
 
-conda create -n changeseq python=2.7
+conda create -n changeseq -c tsailabSJ changeseq
 
 source activate changeseq
-
-conda install -c tsailabSJ changeseq
 
 changeseq.py -h
 
