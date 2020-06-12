@@ -365,7 +365,7 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
             outline = [row[row_index] for row_index in [0,1,2,3,4,5]]
             outline += [control_window_counts]
             outline += [row[row_index] for row_index in [10,11,15,24,25,26,27,28,29]]
-            print(outline, sep='\t', file=o1)
+            print(*(outline), sep='\t', file=o1)
 
 
     # Write unmatched table

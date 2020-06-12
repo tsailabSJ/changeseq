@@ -1,5 +1,6 @@
 {% set name = "changeseq" %}
-{% set version = "1.2.3" %}
+{% set version = "1.2.4" %}
+
 
 package:
   name: "{{ name|lower }}"
@@ -7,7 +8,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: fd28782a2b012dedc2ce862a2c87c551d3a83a153d61df5aab76db27a9cd4fdf
+  sha256: 92639d1b7dbec24c7bd9fbdb10cf9182160dc9a3192c1425ce5263369dd4d6fd
 
 build:
   number: 0
