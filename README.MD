@@ -27,6 +27,8 @@ source activate changeseq
 
 changeseq.py -h
 
+## BWA 0.7.17 and samtools 1.9 are automatically installed
+
 ```
 
 Alternatively, you can git clone this repository and install
