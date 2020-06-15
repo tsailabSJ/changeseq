@@ -399,7 +399,13 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
 """ Reverse complement DNA sequence
 """
 def reverseComplement(seq):
-    compl = dict({'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'N': 'N', 'a': 't', 't': 'a', 'c': 'g', 'g': 'c', 'n': 'n', '.': '.', '-': '-', '_': '_'})
+    compl = dict({'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'N': 'N', 'X': 'X',
+                  'a': 't', 't': 'a', 'c': 'g', 'g': 'c', 'n': 'n', 'x': 'x',
+                  'Y': 'R', 'R': 'Y', 'W': 'W', 'S': 'S', 'K': 'M', 'M': 'K',
+                  'y': 'r', 'r': 'y', 'w': 'w', 's': 's', 'k': 'm', 'm': 'k',
+                  'D': 'H', 'H': 'D', 'V': 'B', 'B': 'V',
+                  'd': 'h', 'h': 'd', 'v': 'b', 'b': 'v',
+                  '.': '.', '-': '-', '_': '_'})
     out_list = [compl[bp] for bp in seq]
     return ''.join(out_list[::-1])
 
