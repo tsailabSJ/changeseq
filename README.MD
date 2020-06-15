@@ -1,6 +1,8 @@
 
 [![Version][version-shield]][version-url]
 [![Python versions][python-shield]][python-url]
+[![Platforms][platform-shield]][python-url]
+
 
 # CHANGE-seq: Circularization for High-throughput Analysis Nuclease Genome-wide Effects by Sequencing
 
@@ -143,4 +145,4 @@ None yet, we will keep this updated as needed.
 [version-url]: https://anaconda.org/tsailabSJ/changeseq
 [python-shield]: https://img.shields.io/pypi/pyversions/changeseq.svg
 [python-url]: https://pypi.python.org/pypi/changeseq
-
+[platform-shield]: https://anaconda.org/tsailabsj/changeseq/badges/platforms.svg
