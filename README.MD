@@ -118,6 +118,8 @@ When running the end-to-end analysis functionality of the CHANGEseq package a nu
 - `start_threshold`: Tolerance for breakpoint location. We recommend leaving it to the default value of 1.
 - `gap_threshold`: Distance between breakpoints. We recommend leaving it to the default value of 3 for Cas9.
 - `mismatch_threshold`: Number of tolerated gaps in the fuzzy target search setp. We recommend leaving it to the default value of 6.
+- `read_length`: Fastq file read length, default is 151.
+- `PAM`: PAM sequence, default is NGG.
 - `merged_analysis`: Whether or not the paired read merging step should takingTrue
 - `samples`: Lists the samples you wish to analyze and the details for each. Each sample name should be nested under the top level samples key, and each sample detail should be nested under the sample name. See the sample manifest for an example.
     - For each sample, you must provide the following parameters:
