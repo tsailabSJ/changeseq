@@ -23,7 +23,7 @@ The most easiest way to install change-seq pipeline is via conda.
 
 ```
 
-conda create -n changeseq -c bioconda -c anaconda -c omnia -c conda-forge -c tsailabSJ changeseq
+conda create -n changeseq -c conda-forge -c bioconda -c anaconda -c omnia -c tsailabSJ changeseq
 
 source activate changeseq
 
