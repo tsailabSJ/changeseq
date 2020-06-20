@@ -1,18 +1,17 @@
 {% set name = "changeseq" %}
-{% set version = "1.2.4" %}
-
+{% set version = "1.2.7" %}
 
 package:
   name: "{{ name|lower }}"
   version: "{{ version }}"
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: 92639d1b7dbec24c7bd9fbdb10cf9182160dc9a3192c1425ce5263369dd4d6fd
+  url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
+  sha256: 2645edc6df9b717b5345d2822e89f9ee05a377db53a020c7153cca836e4c3e8f
 
 build:
   number: 0
-  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv "
+  script: python setup.py install --single-version-externally-managed --record=record.txt
 
 requirements:
   host:
