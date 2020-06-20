@@ -283,7 +283,7 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
                     reads_dict[tag] = max(current_read_count, read_count) 
                     window_min[tag].append(iv.start)
                     window_max[tag].append(iv.end)
-                    matched_dict[tag] = [iv.chrom, target_start_absolute, target_end_absolute, name, read_count, target_strand_absolute,
+                    matched_dict[tag] = [iv.chrom, target_start_absolute, target_end_absolute, name, reads_dict[tag], target_strand_absolute,
                                          min(window_min[tag]), max(window_max[tag]), iv, window_sequence,
                                          offtarget_sequence_no_bulge, mismatches,
                                          chosen_alignment_strand_m, mm_start, mm_end,
