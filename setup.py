@@ -4,13 +4,17 @@
 # from distutils.core import setup
 from setuptools import setup, find_packages
 
-with open("README.MD", "r") as fh:
-	long_description = fh.read()
-
+## conda skeleton can't find readme
+import os
+if os.path.isfile("README.MD"):
+	with open("README.MD", "r") as fh:
+		long_description = fh.read()
+else:
+	long_description="change-seq"
 
 setup(
 	name='changeseq',
-	version='1.2',
+	version='1.2.7', # shengdar updated revcomp function to address SNPs, 1.2.5 to 1.2.6
 	description="Bioinformatic pipeline for the CHANGE-seq assay.",
 	author="Shengdar Q Tsai, Martin Aryee, Ved V Topkar, Jose Malagon-Lopez",
 	author_email='STSAI4@mgh.harvard.edu, Aryee.Martin@mgh.harvard.edu, vedtopkar@gmail.com, jose.lopez@mail.harvard.edu',

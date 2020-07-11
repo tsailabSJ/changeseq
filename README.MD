@@ -1,3 +1,9 @@
+
+[![Version][version-shield]][version-url]
+[![Python versions][python-shield]][python-url]
+[![Platforms][platform-shield]][python-url]
+
+
 # CHANGE-seq: Circularization for High-throughput Analysis Nuclease Genome-wide Effects by Sequencing
 
 This is a repository for CHANGE-seq analytical software, which takes sample-specific paired-end FASTQ files as input and produces a list of CHANGE-seq detected off-target cleavage sites as output.
@@ -13,17 +19,17 @@ This package implements a pipeline that takes in reads from the CHANGE-seq assay
 
 # Installation
 
-The most easiest way to install change-seq pipeline is via conda. (TODO)
+The most easiest way to install change-seq pipeline is via conda.
 
 ```
 
-conda create -n changeseq python=2.7
+conda create -n changeseq -c conda-forge -c bioconda -c anaconda -c omnia -c tsailabSJ changeseq
 
 source activate changeseq
 
-conda install -c tsailabSJ changeseq
-
 changeseq.py -h
+
+## BWA 0.7.17 and samtools 1.9 are automatically installed
 
 ```
 
@@ -40,6 +46,8 @@ pip install -r requirements.txt
 python setup.py install
 
 changeseq.py -h
+
+## Please install BWA and samtools if you choose this option
 
 ```
 
@@ -110,6 +118,8 @@ When running the end-to-end analysis functionality of the CHANGEseq package a nu
 - `start_threshold`: Tolerance for breakpoint location. We recommend leaving it to the default value of 1.
 - `gap_threshold`: Distance between breakpoints. We recommend leaving it to the default value of 3 for Cas9.
 - `mismatch_threshold`: Number of tolerated gaps in the fuzzy target search setp. We recommend leaving it to the default value of 6.
+- `read_length`: Fastq file read length, default is 151.
+- `PAM`: PAM sequence, default is NGG.
 - `merged_analysis`: Whether or not the paired read merging step should takingTrue
 - `samples`: Lists the samples you wish to analyze and the details for each. Each sample name should be nested under the top level samples key, and each sample detail should be nested under the sample name. See the sample manifest for an example.
     - For each sample, you must provide the following parameters:
@@ -132,3 +142,9 @@ When running the full pipeline, the results of each step are outputted to the `o
 # FAQ
 
 None yet, we will keep this updated as needed.
+
+[version-shield]: https://img.shields.io/conda/v/tsailabsj/changeseq.svg
+[version-url]: https://anaconda.org/tsailabSJ/changeseq
+[python-shield]: https://img.shields.io/pypi/pyversions/changeseq.svg
+[python-url]: https://pypi.python.org/pypi/changeseq
+[platform-shield]: https://anaconda.org/tsailabsj/changeseq/badges/platforms.svg

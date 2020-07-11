@@ -28,7 +28,7 @@ def tabulate_merged_start_positions(BamFileName, cells, name, targetsite, mapq_t
 
     with open(output_filename, 'w') as o:
         header = ['#Name', 'Targetsite_Sequence', 'Cells', 'BAM', 'Read1_chr', 'Read1_start_position', 'Read1_strand',
-                  'Read2_chr', 'Read1_start_position', 'Read2_strand']
+                  'Read2_chr', 'Read2_start_position', 'Read2_strand']
         print(*header, sep='\t', file=o)
 
         for read in sorted_bam_file:
@@ -282,7 +282,7 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
                     reads_dict[tag] = max(current_read_count, read_count) 
                     window_min[tag].append(iv.start)
                     window_max[tag].append(iv.end)
-                    matched_dict[tag] = [iv.chrom, target_start_absolute, target_end_absolute, name, read_count, target_strand_absolute,
+                    matched_dict[tag] = [iv.chrom, target_start_absolute, target_end_absolute, name, reads_dict[tag], target_strand_absolute,
                                          min(window_min[tag]), max(window_max[tag]), iv, window_sequence,
                                          offtarget_sequence_no_bulge, mismatches,
                                          chosen_alignment_strand_m, mm_start, mm_end,
@@ -308,15 +308,20 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
     outfile_matched = '{0}_identified_matched.txt'.format(out)
 
     o1 = open(outfile_matched, 'w')
-    print('Chromosome', 'Start', 'End', 'Name', 'ReadCount', 'Strand',  # 0:5
-          'MappingPositionStart', 'MappingPositionEnd', 'WindowName', 'WindowSequence',  # 6:9
-          'Site_SubstitutionsOnly.Sequence', 'Site_SubstitutionsOnly.NumSubstitutions',  # 10:11
-          'Site_SubstitutionsOnly.Strand', 'Site_SubstitutionsOnly.Start', 'Site_SubstitutionsOnly.End',  # 12:14
-          'Site_GapsAllowed.Sequence', 'Site_GapsAllowed.Length', 'Site_GapsAllowed.Score',  # 15:17
-          'Site_GapsAllowed.Substitutions', 'Site_GapsAllowed.Insertions', 'Site_GapsAllowed.Deletions',  # 18:20
-          'Site_GapsAllowed.Strand', 'Site_GapsAllowed.Start', 'Site_GapsAllowed.End',  #21:23
-          'FileName', 'Cell', 'Targetsite', 'FullName', 'TargetSequence', 'RealignedTargetSequence',  # 24:29
-          'Position.Pvalue', 'Narrow.Pvalue', 'Position.Control.Pvalue', 'Narrow.Control.Pvalue','control_position_counts','control_window_counts',  # 30:33
+    # print('Chromosome', 'Start', 'End', 'Name', 'ReadCount', 'Strand',  # 0:5
+          # 'MappingPositionStart', 'MappingPositionEnd', 'WindowName', 'WindowSequence',  # 6:9
+          # 'Site_SubstitutionsOnly.Sequence', 'Site_SubstitutionsOnly.NumSubstitutions',  # 10:11
+          # 'Site_SubstitutionsOnly.Strand', 'Site_SubstitutionsOnly.Start', 'Site_SubstitutionsOnly.End',  # 12:14
+          # 'Site_GapsAllowed.Sequence', 'Site_GapsAllowed.Length', 'Site_GapsAllowed.Score',  # 15:17
+          # 'Site_GapsAllowed.Substitutions', 'Site_GapsAllowed.Insertions', 'Site_GapsAllowed.Deletions',  # 18:20
+          # 'Site_GapsAllowed.Strand', 'Site_GapsAllowed.Start', 'Site_GapsAllowed.End',  #21:23
+          # 'FileName', 'Cell', 'Targetsite', 'FullName', 'TargetSequence', 'RealignedTargetSequence',  # 24:29
+          # 'Position.Pvalue', 'Narrow.Pvalue', 'Position.Control.Pvalue', 'Narrow.Control.Pvalue','control_position_counts','control_window_counts',  # 30:33
+          # sep='\t', file=o1)
+    # Yichao Redefine output
+    print('Chromosome', 'Start', 'End', 'Genomic Coordinate', 'Nuclease_Read_Count', 'Strand',  # 0:5 bed6 format
+          'Control_Read_Count','Site_Sequence','Site_Substitution_Number','Site_Sequence_Gaps_Allowed', # contron window count, # 10:11, 15
+          'File_Name', 'Cell', 'Target_site', 'Full_Name', 'Target_Sequence', 'Realigned_Target_Sequence',  # 24:29
           sep='\t', file=o1)
     o1.close()
 
@@ -355,7 +360,11 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
             #print(*(row + [pval_pos, pval_nar, control_pval_pos, control_pval_nar]), sep='\t', file=o1)
 
             # print(*(row), sep='\t', file=o1)
-            print(*(row)+[control_position_counts,control_window_counts], sep='\t', file=o1)
+            # print(*(row)+[control_position_counts,control_window_counts], sep='\t', file=o1)
+            outline = [row[row_index] for row_index in [0,1,2,3,4,5]]
+            outline += [control_window_counts]
+            outline += [row[row_index] for row_index in [10,11,15,24,25,26,27,28,29]]
+            print(*(outline), sep='\t', file=o1)
 
 
     # Write unmatched table
@@ -389,7 +398,13 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
 """ Reverse complement DNA sequence
 """
 def reverseComplement(seq):
-    compl = dict({'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'N': 'N', 'a': 't', 't': 'a', 'c': 'g', 'g': 'c', 'n': 'n', '.': '.', '-': '-', '_': '_'})
+    compl = dict({'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C', 'N': 'N', 'X': 'X',
+                  'a': 't', 't': 'a', 'c': 'g', 'g': 'c', 'n': 'n', 'x': 'x',
+                  'Y': 'R', 'R': 'Y', 'W': 'W', 'S': 'S', 'K': 'M', 'M': 'K',
+                  'y': 'r', 'r': 'y', 'w': 'w', 's': 's', 'k': 'm', 'm': 'k',
+                  'D': 'H', 'H': 'D', 'V': 'B', 'B': 'V',
+                  'd': 'h', 'h': 'd', 'v': 'b', 'b': 'v',
+                  '.': '.', '-': '-', '_': '_'})
     out_list = [compl[bp] for bp in seq]
     return ''.join(out_list[::-1])
 
