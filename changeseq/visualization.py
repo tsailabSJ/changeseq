@@ -68,12 +68,17 @@ def find_PAM(seq,PAM):
 	try:
 		PAM_index = seq.index(PAM)
 	except:
-		fwd_search = SeqUtils.nt_search(seq, PAM)
-		if len(fwd_search)>1:
-			PAM_index = fwd_search[1]
+		# PAM on the left
+		left_search = SeqUtils.nt_search(seq[:len(PAM)], PAM)
+		if len(left_search)>1:
+			PAM_index = left_search[1]
 		else:
-			print ("PAM: %s not found in %s. Set PAM index to 20"%(PAM,seq))
-			PAM_index=20
+			right_search = SeqUtils.nt_search(seq[-len(PAM):], PAM)
+			if len(right_search)>1:
+				PAM_index = len(seq)-len(PAM)
+			else:
+				print ("PAM: %s not found in %s. Set PAM index to 20"%(PAM,seq))
+				PAM_index=20
 	return PAM_index
 
 def visualizeOfftargets(infile, outfile, title, PAM):
