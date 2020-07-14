@@ -63,6 +63,18 @@ def check_mismatch(a,b):
         return True
     else:
         return False
+from Bio import SeqUtils
+def find_PAM(seq,PAM):
+	try:
+		PAM_index = seq.index(PAM)
+	except:
+		fwd_search = SeqUtils.nt_search(seq, PAM)
+		if len(fwd_search)>1:
+			PAM_index = fwd_search[1]
+		else:
+			print ("PAM: %s not found in %s. Set PAM index to 20"%(PAM,seq))
+			PAM_index=20
+	return PAM_index
 
 def visualizeOfftargets(infile, outfile, title, PAM):
 
@@ -108,18 +120,33 @@ def visualizeOfftargets(infile, outfile, title, PAM):
         # for x in tick_locations:
             # dwg.add(dwg.text(str(x), insert=(x_offset + (x - 1) * box_size + 2, y_offset - 2), style="font-size:10px; font-family:Courier"))
     ## Assume PAM is on the right end Yichao rewrite visualization code, generic PAM
+    ## PAM can be on the left or right, Yichao 0713
     tick_locations = []
     tick_legend = []
-    PAM_index = target_seq.index(PAM)
+    # PAM_index = target_seq.index(PAM)
+    PAM_index = find_PAM(target_seq,PAM)
     count = 0
     for i in range(PAM_index,0,-1):
         count = count+1
         if count % 10 == 0:
             tick_legend.append(count)
+            # print (count,i)
             tick_locations.append(i)
     tick_legend+=['P', 'A', 'M']+['-']*(len(PAM)-3)
     tick_locations+=range(PAM_index+1,len(target_seq)+1)
-    
+    if PAM_index == 0:
+        tick_legend = []
+        tick_locations = []
+        tick_legend+=['P', 'A', 'M']+['-']*(len(PAM)-3)
+        tick_locations+=range(1,len(PAM)+1)
+        count = 0
+        for i in range(len(PAM)+1,len(target_seq)+1):
+            count = count+1
+            if count % 10 == 0 or count == 1:
+                tick_legend.append(count)
+                # print (count,i)
+                tick_locations.append(i)
+    # print (zip(tick_locations, tick_legend))
     for x,y in zip(tick_locations, tick_legend):
         dwg.add(dwg.text(y, insert=(x_offset + (x - 1) * box_size + 2, y_offset - 2), style="font-size:10px; font-family:Courier"))
 

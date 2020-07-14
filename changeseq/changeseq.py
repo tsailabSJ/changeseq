@@ -186,7 +186,7 @@ class CircleSeq:
                 findCleavageSites.compare(self.reference_genome, sorted_bam_file, control_sorted_bam_file, self.samples[sample]['target'],
                                           self.search_radius, self.window_size, self.mapq_threshold, self.gap_threshold,
                                           self.start_threshold, self.mismatch_threshold, sample, self.samples[sample]['description'],
-                                          identified_sites_file, self.all_chromosomes, merged=self.merged_analysis)
+                                          identified_sites_file, self.all_chromosomes, merged=self.merged_analysis,read_count_cutoff=self.read_threshold,read_length=self.read_length)
         except Exception as e:
             logger.error('Error identifying off-target cleavage site.')
             logger.error(traceback.format_exc())
