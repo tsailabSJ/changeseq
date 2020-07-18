@@ -5,6 +5,9 @@
 circleseq.py as the wrapper for CIRCLE-seq analysis
 """
 
+import os
+print (os.__file__)
+
 from alignReads import alignReads
 from visualization import visualizeOfftargets
 from mergeReads import mergeReads
@@ -31,9 +34,13 @@ class CircleSeq:
         self.gap_threshold = 3
         self.mismatch_threshold = 6
         self.read_threshold = 6
+        self.BEmodel_min_overlap = 5
+        self.BEmodel_max_overlap = 15
         self.merged_analysis = True
         self.all_chromosomes = False
         self.variant_analysis = False
+        ### 7/5/2020 for ABE analysis
+        self.BE_analysis = False
 
     def parseManifest(self, manifest_path, sample='all'):
         logger.info('Loading manifest...')
@@ -70,6 +77,14 @@ class CircleSeq:
                 self.all_chromosomes = manifest_data['all_chromosomes']
             if 'variant_analysis' in manifest_data:
                 self.variant_analysis = manifest_data['variant_analysis']
+            if 'BE_analysis' in manifest_data:
+                self.BE_analysis = manifest_data['BE_analysis']
+                if self.BE_analysis:
+                    self.merged_analysis = False
+            if 'BEmodel_min_overlap' in manifest_data:
+                self.BEmodel_min_overlap = manifest_data['BEmodel_min_overlap']
+            if 'BEmodel_max_overlap' in manifest_data:
+                self.BEmodel_max_overlap = manifest_data['BEmodel_max_overlap']
             # Allow the user to specify PAM seq. Yichao 4/29/2020
             if 'PAM' in manifest_data:
                 self.PAM = manifest_data['PAM']
@@ -107,6 +122,16 @@ class CircleSeq:
             sys.exit()
 
     def alignReads(self):
+        """BWA mapping for 3 types: 
+        
+        1. map R1, R2 separately
+        2. concat R1 R2 and map
+        3. BWA PE mode
+        
+        
+        
+        """
+
         if self.merged_analysis:
             logger.info('Merging reads...')
             try:
@@ -183,10 +208,28 @@ class CircleSeq:
                     control_sorted_bam_file = os.path.join(self.analysis_folder, 'aligned', 'control_' + sample + '_sorted.bam')
                 identified_sites_file = os.path.join(self.analysis_folder, 'identified', sample)
                 logger.info('Window: {0}, MAPQ: {1}, Gap: {2}, Start {3}, Mismatches {4}, Search_Radius {5}'.format(self.window_size, self.mapq_threshold, self.gap_threshold, self.start_threshold, self.mismatch_threshold, self.search_radius))
-                findCleavageSites.compare(self.reference_genome, sorted_bam_file, control_sorted_bam_file, self.samples[sample]['target'],
-                                          self.search_radius, self.window_size, self.mapq_threshold, self.gap_threshold,
-                                          self.start_threshold, self.mismatch_threshold, sample, self.samples[sample]['description'],
-                                          identified_sites_file, self.all_chromosomes, merged=self.merged_analysis)
+                findCleavageSites.compare(
+                                          ref = self.reference_genome, 
+                                          bam = sorted_bam_file, 
+                                          control = control_sorted_bam_file, 
+                                          targetsite = self.samples[sample]['target'],
+                                          search_radius = self.search_radius, 
+                                          windowsize = self.window_size, 
+                                          mapq_threshold = self.mapq_threshold, 
+                                          gap_threshold = self.gap_threshold,
+                                          start_threshold = self.start_threshold, 
+                                          mismatch_threshold = self.mismatch_threshold, 
+                                          name = sample, 
+                                          cells = self.samples[sample]['description'],
+                                          out = identified_sites_file, 
+                                          all_chromosomes = self.all_chromosomes, 
+                                          merged=self.merged_analysis,
+                                          read_count_cutoff = self.read_count_cutoff,
+                                          read_length = self.read_length,
+                                          BE_analysis = self.BE_analysis,
+                                          BEmodel_min_overlap = self.BEmodel_min_overlap,
+                                          BEmodel_max_overlap = self.BEmodel_max_overlap
+                                          )
         except Exception as e:
             logger.error('Error identifying off-target cleavage site.')
             logger.error(traceback.format_exc())

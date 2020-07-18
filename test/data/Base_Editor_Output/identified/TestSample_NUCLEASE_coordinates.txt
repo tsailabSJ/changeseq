@@ -1,0 +1,3 @@
+#Name	Targetsite_Sequence	Cells	BAM	Read1_chr	Read1_start_position	Read1_strand	Read2_chr	Read1_start_position	Read2_strand	overlap_bp
+TestSample	GAGTCCGAGCAGAAGAAGAANGG	TestCell	TestSample_sorted.bam	2	9875	-	2	9866	+	10
+TestSample	GAGTCCGAGCAGAAGAAGAANGG	TestCell	TestSample_sorted.bam	2	9875	-	2	9866	+	10

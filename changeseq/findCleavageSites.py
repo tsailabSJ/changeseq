@@ -8,7 +8,7 @@ import regex
 from statsmodels.distributions.empirical_distribution import ECDF
 import sys
 import numpy as np
-
+	
 """ Tabulate merged start positions.
     Identify genomic coordinates for reads mapping across 151/152 bp position.
     Add positions to genomic array.
@@ -23,6 +23,7 @@ def tabulate_merged_start_positions(BamFileName, cells, name, targetsite, mapq_t
     ga_windows = HTSeq.GenomicArray("auto", stranded=False)
     ga_stranded = HTSeq.GenomicArray("auto", stranded=True)
     ga_coverage = HTSeq.GenomicArray("auto", stranded=False)
+    # ga_overlap = HTSeq.GenomicArray("auto", stranded=False,typecode="O")
 
     read_count = 0
 
@@ -38,6 +39,9 @@ def tabulate_merged_start_positions(BamFileName, cells, name, targetsite, mapq_t
             if read.aQual > mapq_threshold and read.aligned:
 
                 ga_coverage[read.iv] += 1
+                # <SAM_Alignment object: Read 'M04990:204:000000000-J6KFJ:1:1108:15107:10418' aligned to chr17:[40703557,40703653)/-> [< CigarOperation: 96 base(s) matched on ref iv chr17:[40703557,40703653)/-, query iv [0,96) >, < CigarOperation: 206 base(s) hard-clipped on ref iv chr17:[40703653,40703653)/-, query iv [96,96) >]
+                # print (read,read.cigar)
+                # print (dir(read))
 
                 for cigar_operation in read.cigar:
                     # Identify positions that end in position 151 and start at position 151
@@ -99,6 +103,7 @@ def tabulate_start_positions(BamFileName, cells, name, targetsite, mapq_threshol
     ga_windows = HTSeq.GenomicArray("auto", stranded=False)
     ga_stranded = HTSeq.GenomicArray("auto", stranded=True)
     ga_coverage = HTSeq.GenomicArray("auto", stranded=False)
+    # ga_overlap = HTSeq.GenomicArray("auto", stranded=False,typecode="O")
     read_count = 0
 
     with open(output_filename, 'w') as o:
@@ -165,6 +170,7 @@ def tabulate_start_positions(BamFileName, cells, name, targetsite, mapq_threshol
                     ga[HTSeq.GenomicPosition(first_read_chr, first_read_position, first_read_strand)] += 1
                     ga_windows[HTSeq.GenomicPosition(first_read_chr, first_read_position, first_read_strand)] = 1
                     ga_stranded[HTSeq.GenomicPosition(first_read_chr, first_read_position, first_read_strand)] += 1
+
                     #    output = True
 
                     # if second_read_chr in ref_chr and second_read_position and second_read_strand:
@@ -186,6 +192,193 @@ def tabulate_start_positions(BamFileName, cells, name, targetsite, mapq_threshol
 
     return ga, ga_windows, ga_stranded, ga_coverage, read_count
 
+def is_outie(x,y):
+	"""check if read1 (x) read2 (y) is outward and the overlap
+	
+	Input
+	-------
+	x,y=[start,end,strand]
+	
+	assuming start end is all 1-index
+	
+	ga assumes 0-index in start and 1-index in end
+	
+	"""
+	flag = False
+	overlap_bp = -1
+	if x[2]=="-":
+		if y[2]=="+":
+			if (x[1]<=y[1]) and (x[0]<=y[0]): # allow overlap be negative
+				flag = True
+				overlap_bp = x[1] - y[0] + 1
+	if x[2]=="+":
+		if y[2]=="-":
+			# print (x,y)
+			# [9867, 10017, '+'] [10008, 10158, '-']
+			if (y[1]<=x[1]) and (y[0]<=x[0]): # allow overlap be negative
+				flag= True
+				overlap_bp = y[1] - x[0] + 1
+	return flag,overlap_bp
+def is_outie2(x,y):
+	"""check if read1 (x) read2 (y) is outward and the overlap
+	
+	Input
+	-------
+	x,y=[start,end,strand]
+	
+	assuming start end is all 1-index
+	
+	ga assumes 0-index in start and 1-index in end
+	
+	"""
+	flag = False
+	overlap_bp = -1
+	if x[2]=="-":
+		if y[2]=="+":
+			if (x[1]>=y[0]) and (x[1]<=y[1]) and (x[0]<=y[0]):
+				flag = True
+				overlap_bp = x[1] - y[0] + 1
+	if x[2]=="+":
+		if y[2]=="-":
+			# print (x,y)
+			# [9867, 10017, '+'] [10008, 10158, '-']
+			if (y[1]>=x[0]) and (y[1]<=x[1]) and (y[0]<=x[0]):
+				flag= True
+				overlap_bp = y[1] - x[0] + 1
+	return flag,overlap_bp
+
+
+def tabulate_start_positions_BE(BamFileName, cells, name, targetsite, mapq_threshold, gap_threshold, outfile_base, pattern, all_chromosomes,BEmodel_min_overlap=5,BEmodel_max_overlap=15):
+
+    output_filename = '{0}_coordinates.txt'.format(outfile_base)
+
+    sorted_bam_file = HTSeq.BAM_Reader(BamFileName)
+    filename_base = os.path.basename(BamFileName)
+    ga = HTSeq.GenomicArray("auto", stranded=False)
+    ga_windows = HTSeq.GenomicArray("auto", stranded=False)
+    ga_stranded = HTSeq.GenomicArray("auto", stranded=True)
+    ga_coverage = HTSeq.GenomicArray("auto", stranded=False)
+    ga_overlap = HTSeq.GenomicArray("auto", stranded=False,typecode="O")
+    read_count = 0
+
+    with open(output_filename, 'w') as o:
+        header = ['#Name', 'Targetsite_Sequence', 'Cells', 'BAM', 'Read1_chr', 'Read1_start_position', 'Read1_strand',
+                  'Read2_chr', 'Read1_start_position', 'Read2_strand',"overlap_bp"]
+        print(*header, sep='\t', file=o)
+        for bundle in HTSeq.pair_SAM_alignments(sorted_bam_file, bundle=True):
+            output = False
+            first_read_chr, first_read_position, first_read_strand = None, None, None
+            second_read_chr, second_read_position, second_read_strand = None, None, None
+
+            if len(bundle) == 1:  # single alignment
+                first_read, second_read = bundle[0]
+                if first_read.aligned:
+                    if first_read.aQual >= mapq_threshold and not first_read.flag & 1024 and \
+                            ((first_read.iv.strand == '+' and first_read.cigar[0].type == 'M') or (first_read.iv.strand == '-' and first_read.cigar[-1].type == 'M')):
+                        first_read_chr = first_read.iv.chrom
+                        # print ("first_read_chr 1 ",first_read_chr)
+                        first_read_position = first_read.iv.start_d
+                        first_read_strand = first_read.iv.strand
+                        r1_start = first_read.iv.start + 1
+                        r1_end = first_read.iv.end 
+                        # print (r1_start,r1_end)
+                if second_read.aligned:
+                    if second_read.aQual >= mapq_threshold and not first_read.flag & 1024 and \
+                            ((second_read.iv.strand == '+' and second_read.cigar[0].type == 'M') or (second_read.iv.strand == '-' and second_read.cigar[-1].type == 'M')):
+                        second_read_chr = second_read.iv.chrom
+                        second_read_position = second_read.iv.start_d
+                        second_read_strand = second_read.iv.strand
+                        r2_start = second_read.iv.start + 1
+                        r2_end = second_read.iv.end 
+            elif len(bundle) > 1:  # multiple alignments
+                first_read_list, second_read_list = zip(*bundle)
+                filtered_first_read_list = []
+                filtered_second_read_list = []
+                for read in first_read_list:
+                    if read:
+                        if read.aligned:
+                            if read.iv.strand == '+' and read.cigar[0].type == 'M':
+                                    filtered_first_read_list.append(read)
+                            elif read.iv.strand == '-' and read.cigar[-1].type == 'M':
+                                    filtered_first_read_list.append(read)
+                for read in second_read_list:
+                    if read:
+                        if read.aligned:
+                            if read.iv.strand == '+' and read.cigar[0].type == 'M':
+                                    filtered_second_read_list.append(read)
+                            elif read.iv.strand == '-' and read.cigar[-1].type == 'M':
+                                    filtered_second_read_list.append(read)
+                if len(filtered_first_read_list) == 1:
+                    first_read = filtered_first_read_list[0]
+                    if first_read.aQual >= mapq_threshold and not first_read.flag & 1024:
+                        first_read_chr = first_read.iv.chrom
+                        # print ("first_read_chr 2",first_read_chr)
+                        first_read_position = first_read.iv.start_d
+                        first_read_strand = first_read.iv.strand
+                        r1_start = first_read.iv.start + 1
+                        r1_end = first_read.iv.end 
+                if len(filtered_second_read_list) == 1:
+                    second_read = filtered_second_read_list[0]
+                    if second_read.aQual >= mapq_threshold and not first_read.flag & 1024:
+                        second_read_chr = second_read.iv.chrom
+                        second_read_position = second_read.iv.start_d
+                        second_read_strand = second_read.iv.strand
+                        r2_start = second_read.iv.start + 1
+                        r2_end = second_read.iv.end 
+
+            if first_read_chr and second_read_chr:
+                # check outward
+                flag, overlap_bp = is_outie([r1_start,r1_end,first_read_strand],[r2_start,r2_end,second_read_strand])
+                # print (first_read,[r1_start,r1_end,first_read_strand],[r2_start,r2_end,second_read_strand],overlap_bp)
+
+                # We check whether or not the read was aligned by asking for 'first_read_chr'
+                if not (BEmodel_min_overlap <=overlap_bp <= BEmodel_max_overlap):
+                    # print ("skip",BEmodel_min_overlap,BEmodel_max_overlap)
+                    continue
+                if (first_read_chr == second_read_chr) and (pattern.match(str(first_read_chr)) or all_chromosomes):
+                    # if first_read_chr in ref_chr and first_read_position and first_read_strand:
+                    print ([r1_start,r1_end,first_read_strand],[r2_start,r2_end,second_read_strand],overlap_bp,BEmodel_min_overlap <=overlap_bp <= BEmodel_max_overlap)
+                    ga[HTSeq.GenomicPosition(first_read_chr, first_read_position, first_read_strand)] += 1
+                    ga_windows[HTSeq.GenomicPosition(first_read_chr, first_read_position, first_read_strand)] = 1
+                    ga_stranded[HTSeq.GenomicPosition(first_read_chr, first_read_position, first_read_strand)] += 1
+                    for gao in ga_overlap[HTSeq.GenomicInterval(first_read_chr, r1_start,r1_end, first_read_strand)].steps():
+                        # print (first_read_chr, r1_start,r1_end, first_read_strand)
+                        # print (gao)
+                        # print (gao[1])
+                        if gao[1]==None:
+                            # gao[1] = [overlap_bp]
+                            ga_overlap[gao[0]] = [overlap_bp]
+                        else:
+                            gao[1].append(overlap_bp)
+                    #    output = True
+
+                    # if second_read_chr in ref_chr and second_read_position and second_read_strand:
+                    ga[HTSeq.GenomicPosition(second_read_chr, second_read_position, second_read_strand)] += 1
+                    ga_windows[HTSeq.GenomicPosition(second_read_chr, second_read_position, second_read_strand)] = 1
+                    ga_stranded[HTSeq.GenomicPosition(second_read_chr, second_read_position, second_read_strand)] += 1
+                    for gao in ga_overlap[HTSeq.GenomicInterval(first_read_chr, r2_start,r2_end, second_read_strand)].steps():
+                        if gao[1]==None:
+                            ga_overlap[gao[0]] = [overlap_bp]
+                        else:
+                            gao[1].append(overlap_bp)
+                    output = True
+
+            # Output read positions for plotting. Add gap.
+            if output == True:
+                print(name, targetsite, cells, filename_base, first_read_chr, first_read_position,
+                      first_read_strand, second_read_chr, second_read_position, second_read_strand, overlap_bp,sep='\t', file=o)
+
+            last_pair_position = [first_read_chr, first_read_position, first_read_strand, second_read_chr, second_read_position, second_read_strand]
+
+            read_count += 1
+            if not read_count % 100000:
+                print(read_count/float(1000000), end=" ", file=sys.stderr)
+
+    return ga, ga_windows, ga_stranded, ga_coverage, read_count,ga_overlap
+
+
+
+
 """ Find genomic windows (coordinate positions)
 """
 def find_windows(ga_windows, window_size):
@@ -206,7 +399,7 @@ def find_windows(ga_windows, window_size):
 """ Find actual sequences of potential off-target sites
 """
 def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, target_name, target_cells,
-                      bam_filename, mismatch_threshold, ga_pval, search_radius, out):
+                      bam_filename, mismatch_threshold, ga_pval, search_radius, out,nuclease_ga_overlap=None,control_ga_overlap=None):
 
     # dictionary to store the matched reads
     matched_dict = {}   
@@ -263,7 +456,22 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
             read_count = int(max(set(narrow_ga[iv])))
             filename = os.path.basename(bam_filename)
             full_name = str(target_name) + '_' + str(target_cells) + '_' + str(name) + '_' + str(read_count)
+            control_ga_overlap_bp_list = []
+            nuclease_ga_overlap_bp_list = []
+            if nuclease_ga_overlap != None:
+                for item in nuclease_ga_overlap[ HTSeq.GenomicInterval( iv.chrom, target_start_absolute,target_end_absolute, "+" ) ].steps():
+                    if item[1] == None:
+                        continue
+                    if len(item[1]) > len(nuclease_ga_overlap_bp_list):
+                        nuclease_ga_overlap_bp_list = item[1]
 
+                for item in control_ga_overlap[ HTSeq.GenomicInterval( iv.chrom, target_start_absolute,target_end_absolute, "+" ) ].steps():
+                    if item[1] == None:
+                        continue
+                    if len(item[1]) > len(control_ga_overlap_bp_list):
+                        control_ga_overlap_bp_list = item[1]
+            nuclease_ga_overlap_bp_list = ",".join([str(x) for x in nuclease_ga_overlap_bp_list])
+            control_ga_overlap_bp_list = ",".join([str(x) for x in control_ga_overlap_bp_list])
             if offtarget_sequence_no_bulge or bulged_offtarget_sequence:
                 tag = iv.chrom + ':' + str(target_start_absolute)
                 if tag not in reads_dict.keys():
@@ -276,7 +484,7 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
                                          chosen_alignment_strand_m, mm_start, mm_end,
                                          bulged_offtarget_sequence, length, score, substitutions, insertions, deletions,
                                          chosen_alignment_strand_b, b_start, b_end,
-                                         filename, target_cells, target_name, full_name, target_sequence, realigned_target]
+                                         filename, target_cells, target_name, full_name, target_sequence, realigned_target,nuclease_ga_overlap_bp_list,control_ga_overlap_bp_list]
                 else:
                     current_read_count = reads_dict[tag]
                     reads_dict[tag] = max(current_read_count, read_count) 
@@ -288,7 +496,7 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
                                          chosen_alignment_strand_m, mm_start, mm_end,
                                          bulged_offtarget_sequence, length, score, substitutions, insertions, deletions,
                                          chosen_alignment_strand_b, b_start, b_end,
-                                         filename, target_cells, target_name, full_name, target_sequence, realigned_target]
+                                         filename, target_cells, target_name, full_name, target_sequence, realigned_target,nuclease_ga_overlap_bp_list,control_ga_overlap_bp_list]
             else:
                 untag = iv.chrom + ':' + str(iv.start)
                 unmatched_dict[untag] = [iv.chrom, target_start_absolute, target_end_absolute, name, read_count, target_strand_absolute,
@@ -297,7 +505,7 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
                                          chosen_alignment_strand_m, mm_start, mm_end,
                                          bulged_offtarget_sequence, length, score, substitutions, insertions, deletions,
                                          chosen_alignment_strand_b, b_start, b_end,
-                                         filename, target_cells, target_name, full_name, target_sequence, 'none']
+                                         filename, target_cells, target_name, full_name, target_sequence, 'none',nuclease_ga_overlap_bp_list,control_ga_overlap_bp_list]
 
     # Write matched table
     
@@ -322,6 +530,7 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
     print('Chromosome', 'Start', 'End', 'Genomic Coordinate', 'Nuclease_Read_Count', 'Strand',  # 0:5 bed6 format
           'Control_Read_Count','Site_Sequence','Site_Substitution_Number','Site_Sequence_Gaps_Allowed', # contron window count, # 10:11, 15
           'File_Name', 'Cell', 'Target_site', 'Full_Name', 'Target_Sequence', 'Realigned_Target_Sequence',  # 24:29
+          'Nuclease_overlap_bp_list', 'Control_overlap_bp_list',  # which column, -2 -1
           sep='\t', file=o1)
     o1.close()
 
@@ -363,7 +572,8 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
             # print(*(row)+[control_position_counts,control_window_counts], sep='\t', file=o1)
             outline = [row[row_index] for row_index in [0,1,2,3,4,5]]
             outline += [control_window_counts]
-            outline += [row[row_index] for row_index in [10,11,15,24,25,26,27,28,29]]
+            # outline += [row[row_index] for row_index in [10,11,15,24,25,26,27,28,29]]
+            outline += [row[row_index] for row_index in [10,11,15,24,25,26,27,28,29,-2,-1]]
             print(*(outline), sep='\t', file=o1)
 
 
@@ -591,9 +801,8 @@ def get_sequence(reference_genome, chromosome, start, end, strand="+"):
         seq = reference_genome[chromosome][int(start):int(end)].reverse.complement
     return str(seq)
 
-
 def compare(ref, bam, control, targetsite, search_radius, windowsize, mapq_threshold, gap_threshold, start_threshold, mismatch_threshold, name,
-            cells, out, all_chromosomes, merged=True,read_count_cutoff=6,read_length=151):
+            cells, out, all_chromosomes, merged=True,read_count_cutoff=6,read_length=151,BE_analysis=False,BEmodel_min_overlap=None,BEmodel_max_overlap=None):
 
     output_list = list()
 
@@ -603,7 +812,8 @@ def compare(ref, bam, control, targetsite, search_radius, windowsize, mapq_thres
     combined_ga = HTSeq.GenomicArray("auto", stranded=False)  # Store the union of control and nuclease positions
     offtarget_ga_windows = HTSeq.GenomicArray("auto", stranded=False)  # Store potential off-target sites
     ga_narrow_windows = HTSeq.GenomicArray("auto", stranded=False)  # Store potential off-target sites narrow windows read counts
-
+    # Yichao 0711 for base editor record overlaps
+    # ga_narrow_windows_record_overlap = HTSeq.GenomicArray("auto", stranded=False ,typecode="O")
     bg_position = list()  # List to store nuclease_position_counts that were observed at least once
     bg_narrow = list()  # List to store the sum of nuclease_position_counts in the narrow window
 
@@ -614,8 +824,11 @@ def compare(ref, bam, control, targetsite, search_radius, windowsize, mapq_thres
     output_filename = out + '_count.txt'
     with open(output_filename, 'w') as o:
         print("Writing counts to {0}".format(output_filename), file=sys.stderr)
+        nuclease_ga_overlap = None
+        control_ga_overlap = None
         if merged:
             print("Tabulate nuclease merged start positions.", file=sys.stderr)
+            ## notes: nuclease_ga_coverage not used
             nuclease_ga, nuclease_ga_windows, nuclease_ga_stranded, nuclease_ga_coverage, total_nuclease_count = \
                 tabulate_merged_start_positions(bam, cells, name, targetsite, mapq_threshold, gap_threshold,
                                                 start_threshold, out + '_NUCLEASE', pattern, all_chromosomes, read_length)
@@ -623,6 +836,13 @@ def compare(ref, bam, control, targetsite, search_radius, windowsize, mapq_thres
             control_ga, control_ga_windows, control_ga_stranded, control_ga_coverage, total_control_count = \
                 tabulate_merged_start_positions(control, cells, name, targetsite, mapq_threshold, gap_threshold,
                                                 start_threshold, out + '_CONTROL', pattern, all_chromosomes, read_length)
+        elif BE_analysis:
+            print("BE analysis mode! Tabulate nuclease standard start positions.", file=sys.stderr)
+            nuclease_ga, nuclease_ga_windows, nuclease_ga_stranded, nuclease_ga_coverage, total_nuclease_count,nuclease_ga_overlap = \
+                tabulate_start_positions_BE(bam, cells, name, targetsite, mapq_threshold, gap_threshold, out + '_NUCLEASE', pattern, all_chromosomes,BEmodel_min_overlap=BEmodel_min_overlap,BEmodel_max_overlap=BEmodel_max_overlap)
+            print("BE analysis mode! Tabulate control standard start positions.", file=sys.stderr)
+            control_ga, control_ga_windows, control_ga_stranded, control_ga_coverage, total_control_count,control_ga_overlap = \
+                tabulate_start_positions_BE(control, cells, name, targetsite, mapq_threshold, gap_threshold, out + '_CONTROL', pattern, all_chromosomes,BEmodel_min_overlap=BEmodel_min_overlap,BEmodel_max_overlap=BEmodel_max_overlap)
         else:
             print("Tabulate nuclease standard start positions.", file=sys.stderr)
             nuclease_ga, nuclease_ga_windows, nuclease_ga_stranded, nuclease_ga_coverage, total_nuclease_count = \
@@ -672,8 +892,15 @@ def compare(ref, bam, control, targetsite, search_radius, windowsize, mapq_thres
 
         # Empirical cdf
         #print(bg_position, bg_narrow)
-        ecdf_pos = ECDF(bg_position)
-        ecdf_nar = ECDF(bg_narrow)
+        # print (bg_position)
+        # print (bg_narrow)
+        try:
+            ecdf_pos = ECDF(bg_position)
+            ecdf_nar = ECDF(bg_narrow)
+        except Exception as e:
+            print (e)
+            ecdf_pos = ECDF([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+            ecdf_nar = ECDF([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
         # Genomic array to store the p-values for every chromosome:position object
         ga_pval = HTSeq.GenomicArray("auto", typecode='O', stranded=False)
@@ -706,7 +933,7 @@ def compare(ref, bam, control, targetsite, search_radius, windowsize, mapq_thres
         ga_consolidated_windows = find_windows(offtarget_ga_windows, windowsize)    # consolidate windows within 3 bp
 
         output_alignments(ga_narrow_windows, ga_consolidated_windows, reference_genome, targetsite, name, cells, bam,
-                          mismatch_threshold, ga_pval, search_radius, out)
+                          mismatch_threshold, ga_pval, search_radius, out,nuclease_ga_overlap,control_ga_overlap)
 
 def main():
     parser = argparse.ArgumentParser(description='Identify off-target candidates from Illumina short read sequencing data.')

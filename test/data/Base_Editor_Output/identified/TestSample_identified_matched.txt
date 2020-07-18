@@ -1,0 +1,1 @@
+Chromosome	Start	End	Genomic Coordinate	Nuclease_Read_Count	Strand	Control_Read_Count	Site_Sequence	Site_Substitution_Number	Site_Sequence_Gaps_Allowed	File_Name	Cell	Target_site	Full_Name	Target_Sequence	Realigned_Target_Sequence	Nuclease_overlap_bp_list	Control_overlap_bp_list
