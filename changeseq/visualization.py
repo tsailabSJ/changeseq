@@ -4,6 +4,7 @@ import svgwrite
 import os
 import logging
 import argparse
+import pandas as pd
 
 ### 2017-October-11: Adapt plots to new output; inputs are managed using "argparse".
 
@@ -18,14 +19,17 @@ v_spacing = 3
 colors = {'G': '#F5F500', 'A': '#FF5454', 'T': '#00D118', 'C': '#26A8FF', 'N': '#B3B3B3', 'R': '#B3B3B3', '-': '#B3B3B3'}
 for c in ['Y','S','W','K','M','B','D','H','V','.']:
     colors[c] = "#B3B3B3"
-    
+
+
+
 def parseSitesFile(infile):
     offtargets = []
     total_seq = 0
+    
     with open(infile, 'r') as f:
         f.readline()
         for line in f:
-            line = line.rstrip('\n')
+            # line = line.rstrip('\n')
             line_items = line.split('\t')
             # offtarget_reads = line_items[4]
             # no_bulge_offtarget_sequence = line_items[10]
@@ -37,6 +41,13 @@ def parseSitesFile(infile):
             bulge_offtarget_sequence = line_items[9]
             target_seq = line_items[14]
             realigned_target_seq = line_items[15]
+            name = line_items[3]
+            overlaps = line_items[-2].split(",")
+            if len(overlaps)>0:
+                df=pd.DataFrame([int(x) for x in overlaps])
+                overlaps = str(df[0].value_counts().to_dict())
+            else:
+                overlaps = ""
 
             if no_bulge_offtarget_sequence != '' or bulge_offtarget_sequence != '':
                 if no_bulge_offtarget_sequence:
@@ -47,6 +58,8 @@ def parseSitesFile(infile):
                                    'bulged_seq': bulge_offtarget_sequence.strip(),
                                    'reads': int(offtarget_reads.strip()),
                                    'target_seq': target_seq.strip(),
+                                   'name': name,
+                                   'overlaps': overlaps,
                                    'realigned_target_seq': realigned_target_seq.strip()
                                    })
     offtargets = sorted(offtargets, key=lambda x: x['reads'], reverse=True)
@@ -138,6 +151,8 @@ def visualizeOfftargets(infile, outfile, title, PAM):
         realigned_target_seq = offtargets[j]['realigned_target_seq']
         no_bulge_offtarget_sequence = offtargets[j]['seq']
         bulge_offtarget_sequence = offtargets[j]['bulged_seq']
+        name = offtargets[j]['name']
+        overlap = offtargets[j]['overlap']
 
         if no_bulge_offtarget_sequence != '':
             k = 0
@@ -183,11 +198,11 @@ def visualizeOfftargets(infile, outfile, title, PAM):
                     k += 1
 
         if no_bulge_offtarget_sequence == '' or bulge_offtarget_sequence == '':
-            reads_text = dwg.text(str(seq['reads']), insert=(box_size * (len(target_seq) + 1) + 20, y_offset + box_size * (line_number + 2) - 2),
+            reads_text = dwg.text(str(seq['reads'])+","+name+","+overlap, insert=(box_size * (len(target_seq) + 1) + 20, y_offset + box_size * (line_number + 2) - 2),
                                   fill='black', style="font-size:15px; font-family:Courier")
             dwg.add(reads_text)
         else:
-            reads_text = dwg.text(str(seq['reads']), insert=(box_size * (len(target_seq) + 1) + 20, y_offset + box_size * (line_number + 1) + 5),
+            reads_text = dwg.text(str(seq['reads'])+","+name+","+overlap, insert=(box_size * (len(target_seq) + 1) + 20, y_offset + box_size * (line_number + 1) + 5),
                                   fill='black', style="font-size:15px; font-family:Courier")
             dwg.add(reads_text)
             reads_text02 = dwg.text(u"\u007D", insert=(box_size * (len(target_seq) + 1) + 7, y_offset + box_size * (line_number + 1) + 5),
