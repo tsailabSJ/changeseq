@@ -5,7 +5,7 @@ import os
 import logging
 import argparse
 import pandas as pd
-
+import subprocess
 ### 2017-October-11: Adapt plots to new output; inputs are managed using "argparse".
 
 logger = logging.getLogger('root')
@@ -77,12 +77,25 @@ def check_mismatch(a,b):
     else:
         return False
 
+def vis_unmached(infile,outdir):
+    file = infile.replace("_identified_matched.txt","_identified_unmatched.txt")
+    label = infile.replace("_identified_matched.txt","")
+    command1 = "muscle -in %s -out %s.aln -clwstrict"%(file,label)
+    command2 = "module load conda3;source activate /home/yli11/.conda/envs/py2;python /home/yli11/HemTools/bin/multi_alignment.ploter.py plot --align %s.aln --prefix %s"%(label,label)
+    command3 = "convert {0}.svg {0}.png; mv {0}* {1}".format(label,outdir)
+    subprocess.call(command1,shell=True)
+    subprocess.call(command2,shell=True)
+    subprocess.call(command3,shell=True)
+
 def visualizeOfftargets(infile, outfile, title, PAM):
 
     output_folder = os.path.dirname(outfile)
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
-
+    try:
+        vis_unmached(infile,output_folder)
+    except:
+        pass
     # Get offtargets array from file
     offtargets, target_seq, total_seq = parseSitesFile(infile)
 
