@@ -79,10 +79,12 @@ def check_mismatch(a,b):
 
 def vis_unmached(infile,outdir):
     file = infile.replace("_identified_matched.txt","_identified_unmatched.txt")
-    label = infile.replace("_identified_matched.txt","")
-    command1 = "muscle -in %s -out %s.aln -clwstrict"%(file,label)
-    command2 = "module load conda3;source activate /home/yli11/.conda/envs/py2;python /home/yli11/HemTools/bin/multi_alignment.ploter.py plot --align %s.aln --prefix %s"%(label,label)
+    label = infile.split("/")[-1].replace("_identified_matched.txt","")
+    command0 = ''' awk -F "\\t" '{print ">"$4"_"$5"\\n"$10}' %s > %s.fa'''%(file,label)
+    command1 = "module load conda3;source activate /home/yli11/.conda/envs/py2;muscle -in %s.fa -out %s.aln -clwstrict"%(label,label)
+    command2 = "module load conda3;source activate /home/yli11/.conda/envs/py2;~/.conda/envs/py2/bin/python /home/yli11/HemTools/bin/multi_alignment.ploter.py plot --align %s.aln --prefix %s"%(label,label)
     command3 = "convert {0}.svg {0}.png; mv {0}* {1}".format(label,outdir)
+    subprocess.call(command0,shell=True)
     subprocess.call(command1,shell=True)
     subprocess.call(command2,shell=True)
     subprocess.call(command3,shell=True)
@@ -93,6 +95,8 @@ def visualizeOfftargets(infile, outfile, title, PAM):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     try:
+        print (infile)
+        print (output_folder)
         vis_unmached(infile,output_folder)
     except:
         pass
