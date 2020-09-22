@@ -421,11 +421,16 @@ def regexFromSequence(seq, lookahead=True, indels=1, errors=7):
                             'R': '[AGR]',
                             'W': '[ATW]',
                             'S': '[CGS]',
+                            'K': '[GTK]',
+                            'M': '[ACM]',
+                            'H': '[ACTH]',
+                            'B': '[CGTB]',
+                            'D': '[AGTD]',
+                            'V': '[ACGV]',
                             'A': 'A',
                             'T': 'T',
                             'C': 'C',
                             'G': 'G'}
-
     pattern = ''
 
     for c in seq:
@@ -441,7 +446,7 @@ def regexFromSequence(seq, lookahead=True, indels=1, errors=7):
 """
 Allow for '-' in our search, but do not allow insertions or deletions. 
 """
-def extendedPattern(seq, errors):
+def extendedPattern(seq, errors): # 0921, Seems this function is not used, Yichao
     IUPAC_notation_regex_extended = {'N': '[ATCGN]','-': '[ATCGN]','Y': '[CTY]','R': '[AGR]','W': '[ATW]','S': '[CGS]','A': 'A','T': 'T','C': 'C','G': 'G'}
     realign_pattern = ''
     for c in seq:
