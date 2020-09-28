@@ -678,21 +678,26 @@ def compare(ref, bam, control, targetsite, search_radius, windowsize, mapq_thres
 
         # Empirical cdf
         #print(bg_position, bg_narrow)
-        ecdf_pos = ECDF(bg_position)
-        ecdf_nar = ECDF(bg_narrow)
+        # ecdf_pos = ECDF(bg_position)
+        # ecdf_nar = ECDF(bg_narrow)
 
         # Genomic array to store the p-values for every chromosome:position object
         ga_pval = HTSeq.GenomicArray("auto", typecode='O', stranded=False)
 
         # Ratio to be used in scaling the nuclease count
-        scale_factor = total_control_count/float(total_nuclease_count)
+        # scale_factor = total_control_count/float(total_nuclease_count)
 
         for idx, fields in enumerate(output_list):
-            position_p_val = 1 - ecdf_pos(fields[2]*scale_factor)
-            narrow_p_val = 1 - ecdf_nar(fields[4]*scale_factor)
+            # position_p_val = 1 - ecdf_pos(fields[2]*scale_factor) ## not used
+            # narrow_p_val = 1 - ecdf_nar(fields[4]*scale_factor)
 
-            control_position_p_val = 1 - ecdf_pos(fields[3])
-            control_narrow_p_val = 1 - ecdf_nar(fields[5])
+            # control_position_p_val = 1 - ecdf_pos(fields[3])
+            # control_narrow_p_val = 1 - ecdf_nar(fields[5])
+            position_p_val = 1 
+            narrow_p_val = 1 
+
+            control_position_p_val = 1 
+            control_narrow_p_val = 1 
 
             #if narrow_p_val < 0.01 or position_p_val < 0.01:
             ## read threshold is here: Yichao, read_count_cutoff
