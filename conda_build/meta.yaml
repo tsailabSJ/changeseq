@@ -1,13 +1,17 @@
 {% set name = "changeseq" %}
-{% set version = "1.2.7" %}
+{% set version = "1.2.8" %}
+{% set file_ext = "tar.gz" %}
+{% set hash_type = "sha256" %}
+{% set hash_value = "42dde92e84e63369e4c0f2d6f1135952a6478644df9a6f303d3f93507e1f6573" %}
 
 package:
   name: "{{ name|lower }}"
   version: "{{ version }}"
 
 source:
-  url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
-  sha256: 2645edc6df9b717b5345d2822e89f9ee05a377db53a020c7153cca836e4c3e8f
+  fn: '{{ name }}-{{ version }}.{{ file_ext }}'
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.{{ file_ext }}
+  '{{ hash_type }}': '{{ hash_value }}'
 
 build:
   number: 0
@@ -45,12 +49,50 @@ test:
 
 about:
   home: https://github.com/tsailabSJ/changeseq
-  license: GNU General Public v2 (GPLv2)
+  license: GNU General Public License v2 (GPLv2)
   license_family: GPL2
-  license_file: 
+  license_file: ''
   summary: Bioinformatic pipeline for the CHANGE-seq assay.
-  doc_url: 
-  dev_url: 
+  description: "[![Version][version-shield]][version-url]\n[![Python versions][python-shield]][python-url]\n[![Platforms][platform-shield]][python-url]\n\n\n# CHANGE-seq: Circularization for High-throughput\
+    \ Analysis Nuclease Genome-wide Effects by Sequencing\n\nThis is a repository for CHANGE-seq analytical software, which takes sample-specific paired-end FASTQ files as input and produces a list of CHANGE-seq\
+    \ detected off-target cleavage sites as output.\n\n# Summary\n\nThis package implements a pipeline that takes in reads from the CHANGE-seq assay and returns detected cleavage sites as output. The individual\
+    \ pipeline steps are:\n\n1. **Merge**: Merge read1 an read2 for easier mapping to genome.\n2. **Read Alignment**: Merged paired end reads from the assay are aligned to the reference genome using the\
+    \ BWA-MEM algorithm with default parameters (Li. H, 2009).\n3. **Cleavage Site Identification**: Mapped sites are analyzed to determine which represent high-quality cleavage sites.\n4. **Visualization\
+    \ of Results**: Identified on-target and off-target cleavage sites are rendered as a color-coded alignment map for easy analysis of results.\n\n# Installation\n\nThe most easiest way to install change-seq\
+    \ pipeline is via conda.\n\n```\n\nconda create -n changeseq -c conda-forge -c bioconda -c anaconda -c omnia -c tsailabSJ changeseq\n\nsource activate changeseq\n\nchangeseq.py -h\n\n## BWA 0.7.17 and\
+    \ samtools 1.9 are automatically installed\n\n```\n\nAlternatively, you can git clone this repository and install\n\n```\n\ngit clone https://github.com/tsailabSJ/changeseq\n\ncd changeseq\n\npip install\
+    \ -r requirements.txt\n\npython setup.py install\n\nchangeseq.py -h\n\n## Please install BWA and samtools if you choose this option\n\n```\n\n## Download Reference Genome\n\nThe CHANGEseq package requires\
+    \ a reference genome for read mapping. You can use any genome of your choosing, but for all of our testing and original CHANGE-seq analyses we use hg19 ([download](http://www.broadinstitute.org/ftp/pub/seq/references/Homo_sapiens_assembly19.fasta)).\
+    \ Be sure to (g)unzip the FASTA file before use if it is compressed.\n\n# Usage\n\nThe change-seq pipeline requires a manifest yaml file specifying input files, output directory, and pipeline parameters.\
+    \ Once the yaml file is created, users can simply run ``change_seq.py all --manifest /path/to/manifest.yaml``\n\n\nBelow is an example ``manifest.yaml`` file::\n\n    reference_genome: /data/joung/genomes/Homo_sapiens_assembly19.fasta\n\
+    \    analysis_folder: /data/joung/CHANGE-Seq/test2\n\n    bwa: bwa\n    samtools: samtools\n\n    read_threshold: 4\n    window_size: 3\n    mapq_threshold: 50\n    start_threshold: 1\n    gap_threshold:\
+    \ 3\n    mismatch_threshold: 6\n    search_radius: 30\n    merged_analysis: True\n\n    samples:\n        U2OS_exp1_VEGFA_site_1:\n            target: GGGTGGGGGGAGTTTGCTCCNGG\n            read1: /data/joung/sequencing_fastq/150902_M01326_0235_000000000-AHLT8/fastq/1_S1_L001_R1_001.fastq.gz\n\
+    \            read2: /data/joung/sequencing_fastq/150902_M01326_0235_000000000-AHLT8/fastq/1_S1_L001_R2_001.fastq.gz\n            controlread1: /data/joung/sequencing_fastq/150902_M01326_0235_000000000-AHLT8/fastq/4_S4_L001_R1_001.fastq.gz\n\
+    \            controlread2: /data/joung/sequencing_fastq/150902_M01326_0235_000000000-AHLT8/fastq/4_S4_L001_R2_001.fastq.gz\n            description: U2OS_exp1\n        U2OS_exp1_EMX1:\n            target:\
+    \ GAGTCCGAGCAGAAGAAGAANGG\n            read1: /data/joung/sequencing_fastq/150902_M01326_0235_000000000-AHLT8/fastq/2_S2_L001_R1_001.fastq.gz\n            read2: /data/joung/sequencing_fastq/150902_M01326_0235_000000000-AHLT8/fastq/2_S2_L001_R2_001.fastq.gz\n\
+    \            controlread1: /data/joung/sequencing_fastq/150902_M01326_0235_000000000-AHLT8/fastq/4_S4_L001_R1_001.fastq.gz\n            controlread2: /data/joung/sequencing_fastq/150902_M01326_0235_000000000-AHLT8/fastq/4_S4_L001_R2_001.fastq.gz\n\
+    \            description: U2OS_exp1\n\n## Quickstart\n\n```\n\ngit clone https://github.com/tsailabSJ/changeseq\n\ncd changeseq/test\n\nchangeseq.py all --manifest CIRCLEseq_MergedTest.yaml\n\n```\n\
+    \n# Writing A Manifest File\nWhen running the end-to-end analysis functionality of the CHANGEseq package a number of inputs are required. To simplify the formatting of these inputs and to encourage\
+    \ reproducibility, these parameters are inputted into the pipeline via a manifest formatted as a YAML file. YAML files allow easy-to-read specification of key-value pairs. This allows us to easily specify\
+    \ our parameters. The following fields are required in the manifest:\n\n- `reference_genome`: The absolute path to the reference genome FASTA file.\n- `output_folder`: The absolute path to the folder\
+    \ in which all pipeline outputs will be saved.\n- `bwa`: The absolute path to the `bwa` executable\n- `samtools`: The absolute path to the `samtools` executable\n- `read_threshold`: The minimum number\
+    \ of reads at a location for that location to be called as a site. We recommend leaving it to the default value of 4.\n- `window_size`: Size of the sliding window, we recommend leaving it to the default\
+    \ value of 3.\n- `mapq_threshold`: Minimum read mapping quality score. We recommend leaving it to the default value of 50.\n- `start_threshold`: Tolerance for breakpoint location. We recommend leaving\
+    \ it to the default value of 1.\n- `gap_threshold`: Distance between breakpoints. We recommend leaving it to the default value of 3 for Cas9.\n- `mismatch_threshold`: Number of tolerated gaps in the\
+    \ fuzzy target search setp. We recommend leaving it to the default value of 6.\n- `read_length`: Fastq file read length, default is 151.\n- `PAM`: PAM sequence, default is NGG.\n- `merged_analysis`:\
+    \ Whether or not the paired read merging step should takingTrue\n- `samples`: Lists the samples you wish to analyze and the details for each. Each sample name should be nested under the top level samples\
+    \ key, and each sample detail should be nested under the sample name. See the sample manifest for an example.\n    - For each sample, you must provide the following parameters:\n        - `target`:\
+    \ Target sequence for that sample. Accepts degenerate bases.\n        - `read1`: The absolute path to the .FASTQ(.gz) file containing the read1 reads.\n        - `read2`: The absolute path to the .FASTQ(.gz)\
+    \ file containing the read2 reads.\n        - `controlread1`: The absolute path to the .FASTQ(.gz) file containing the control read1 reads.\n        - `controlread2`: The absolute path to the .FASTQ(.gz)\
+    \ file containing the control read2 reads.\n        - `description`: A brief description of the sample\n\n\n# Pipeline Output\nWhen running the full pipeline, the results of each step are outputted\
+    \ to the `output_folder` in a separate folder for each step. The output folders and their respective contents are as follows:\n\n- `output_folder/aligned`: Contains an alignment `.sam`, alignment `.bam`,\
+    \ sorted `bam`, and `.bai` index file for each sample.\n- `output_folder/fastq`: Merged `.fastq.gz` files for each sample.\n- `output_folder/identified`: Contains tab-delimited `.txt` files for each\
+    \ sample containing the identified DSBs, control DSBs, filtered DSBs, and read quantification.\n- `output_folder/visualization`: Contains a `.svg` vector image representing an alignment of all detected\
+    \ off-targets to the targetsite for each sample.\n\n# FAQ\n\nNone yet, we will keep this updated as needed.\n\n[version-shield]: https://img.shields.io/conda/v/tsailabsj/changeseq.svg\n[version-url]:\
+    \ https://anaconda.org/tsailabSJ/changeseq\n[python-shield]: https://img.shields.io/pypi/pyversions/changeseq.svg\n[python-url]: https://pypi.python.org/pypi/changeseq\n[platform-shield]: https://anaconda.org/tsailabsj/changeseq/badges/platforms.svg\n\
+    \n\n"
+  doc_url: ''
+  dev_url: ''
 
 extra:
   recipe-maintainers:
