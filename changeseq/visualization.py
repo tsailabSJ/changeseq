@@ -37,6 +37,8 @@ def parseSitesFile(infile):
             bulge_offtarget_sequence = line_items[9]
             target_seq = line_items[14]
             realigned_target_seq = line_items[15]
+            coord = line_items[3]
+            num_mismatch = line_items[8]
 
             if no_bulge_offtarget_sequence != '' or bulge_offtarget_sequence != '':
                 if no_bulge_offtarget_sequence:
@@ -46,6 +48,8 @@ def parseSitesFile(infile):
                 offtargets.append({'seq': no_bulge_offtarget_sequence.strip(),
                                    'bulged_seq': bulge_offtarget_sequence.strip(),
                                    'reads': int(offtarget_reads.strip()),
+                                   'coord': str(coord),
+                                   'num_mismatch': str(num_mismatch),
                                    'target_seq': target_seq.strip(),
                                    'realigned_target_seq': realigned_target_seq.strip()
                                    })
@@ -137,7 +141,10 @@ def visualizeOfftargets(infile, outfile, title, PAM):
             tick_legend.append(count)
             # print (count,i)
             tick_locations.append(i)
-    tick_legend+=['P', 'A', 'M']+['-']*(len(PAM)-3)
+    if len(PAM)>=3:
+        tick_legend+=['P', 'A', 'M']+['-']*(len(PAM)-3)
+    else:
+        tick_legend+=["PAM"]+['-']*(len(PAM)-3)
     tick_locations+=range(PAM_index+1,len(target_seq)+1)
     if PAM_index == 0:
         tick_legend = []
@@ -162,6 +169,8 @@ def visualizeOfftargets(infile, outfile, title, PAM):
         dwg.add(dwg.rect((x, y), (box_size, box_size), fill=colors[c]))
         dwg.add(dwg.text(c, insert=(x + 3, y + box_size - 3), fill='black', style="font-size:15px; font-family:Courier"))
     dwg.add(dwg.text('Reads', insert=(x_offset + box_size * len(target_seq) + 16, y_offset + box_size - 3), style="font-size:15px; font-family:Courier"))
+    dwg.add(dwg.text('Mismatches', insert=(box_size * (len(target_seq) + 1) + 90, y_offset + box_size - 3), style="font-size:15px; font-family:Courier"))
+    dwg.add(dwg.text('Coordinates', insert=(box_size * (len(target_seq) + 1) + 220, y_offset + box_size - 3), style="font-size:15px; font-family:Courier"))
 
     # Draw aligned sequence rows
     y_offset += 1  # leave some extra space after the reference row
@@ -218,10 +227,22 @@ def visualizeOfftargets(infile, outfile, title, PAM):
             reads_text = dwg.text(str(seq['reads']), insert=(box_size * (len(target_seq) + 1) + 20, y_offset + box_size * (line_number + 2) - 2),
                                   fill='black', style="font-size:15px; font-family:Courier")
             dwg.add(reads_text)
+            mismatch_text = dwg.text(seq['num_mismatch'], insert=(box_size * (len(target_seq) + 1) + 130, y_offset + box_size * (line_number + 1) + 5),
+                                  fill='black', style="font-size:15px; font-family:Courier")
+            dwg.add(mismatch_text)
+            mismatch_text = dwg.text(seq['coord'], insert=(box_size * (len(target_seq) + 1) + 220, y_offset + box_size * (line_number + 1) + 5),
+                                  fill='black', style="font-size:15px; font-family:Courier")
+            dwg.add(mismatch_text)
         else:
             reads_text = dwg.text(str(seq['reads']), insert=(box_size * (len(target_seq) + 1) + 20, y_offset + box_size * (line_number + 1) + 5),
                                   fill='black', style="font-size:15px; font-family:Courier")
             dwg.add(reads_text)
+            mismatch_text = dwg.text(seq['num_mismatch'], insert=(box_size * (len(target_seq) + 1) + 130, y_offset + box_size * (line_number + 1) + 5),
+                                  fill='black', style="font-size:15px; font-family:Courier")
+            dwg.add(mismatch_text)
+            mismatch_text = dwg.text(seq['coord'], insert=(box_size * (len(target_seq) + 1) + 220, y_offset + box_size * (line_number + 1) + 5),
+                                  fill='black', style="font-size:15px; font-family:Courier")
+            dwg.add(mismatch_text)
             reads_text02 = dwg.text(u"\u007D", insert=(box_size * (len(target_seq) + 1) + 7, y_offset + box_size * (line_number + 1) + 5),
                                   fill='black', style="font-size:23px; font-family:Courier")
             dwg.add(reads_text02)
@@ -229,9 +250,9 @@ def visualizeOfftargets(infile, outfile, title, PAM):
 
 def main():
     parser = argparse.ArgumentParser(description='Plot visualization plots for re-aligned reads.')
-    parser.add_argument("--identified_file", help="FullPath/output file from reAlignment_circleseq.py", required=True)
-    parser.add_argument("--outfile", help="FullPath/VIZ", required=True)
-    parser.add_argument("--title", help="Plot title", required=True)
+    parser.add_argument("-f","--identified_file", help="FullPath/output file from reAlignment_circleseq.py", required=True)
+    parser.add_argument("-o","--outfile", help="FullPath/VIZ", required=True)
+    parser.add_argument("-t","--title", help="Plot title", required=True)
     parser.add_argument("--PAM", help="PAM sequence", default="NGG")    
     args = parser.parse_args()
 
