@@ -4,6 +4,7 @@ import svgwrite
 import os
 import logging
 import argparse
+import pandas as pd
 
 ### 2017-October-11: Adapt plots to new output; inputs are managed using "argparse".
 
@@ -19,6 +20,17 @@ colors = {'G': '#F5F500', 'A': '#FF5454', 'T': '#00D118', 'C': '#26A8FF', 'N': '
 for c in ['Y','S','W','K','M','B','D','H','V','.']:
     colors[c] = "#B3B3B3"
     
+def parse_homer(identified,homer_output,genome):
+    select_col="Annotation"
+    command = "annotatePeaks.pl %s %s > %s"%(identified,genome,homer_output)
+    os.system(command)
+    df = pd.read_csv(identified,sep="\t")
+    df.index = df['Genomic Coordinate'].to_list()
+    df2 = pd.read_csv(homer_output,sep="\t",index_col=0)
+    df['Annotation'] = df2[select_col]
+    out = identified.replace(".txt",".annot.tsv")
+    df.to_csv(out,sep="\t",index=False)
+    return out
 def parseSitesFile(infile):
     offtargets = []
     total_seq = 0
@@ -39,6 +51,10 @@ def parseSitesFile(infile):
             realigned_target_seq = line_items[15]
             coord = line_items[3]
             num_mismatch = line_items[8]
+            try:
+                annot = line_items[16]
+            except:
+                annot = ""
 
             if no_bulge_offtarget_sequence != '' or bulge_offtarget_sequence != '':
                 if no_bulge_offtarget_sequence:
@@ -49,6 +65,7 @@ def parseSitesFile(infile):
                                    'bulged_seq': bulge_offtarget_sequence.strip(),
                                    'reads': int(offtarget_reads.strip()),
                                    'coord': str(coord),
+                                   'annot': str(annot),
                                    'num_mismatch': str(num_mismatch),
                                    'target_seq': target_seq.strip(),
                                    'realigned_target_seq': realigned_target_seq.strip()
@@ -85,12 +102,15 @@ def find_PAM(seq,PAM):
 				PAM_index=20
 	return PAM_index
 
-def visualizeOfftargets(infile, outfile, title, PAM):
+def visualizeOfftargets(infile, outfile, title, PAM, genome=None):
 
     output_folder = os.path.dirname(outfile)
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
+
+    if genome!=None:
+        infile = parse_homer(infile,outfile+".raw.homer.tsv",genome)
     # Get offtargets array from file
     offtargets, target_seq, total_seq = parseSitesFile(infile)
 
@@ -170,7 +190,9 @@ def visualizeOfftargets(infile, outfile, title, PAM):
         dwg.add(dwg.text(c, insert=(x + 3, y + box_size - 3), fill='black', style="font-size:15px; font-family:Courier"))
     dwg.add(dwg.text('Reads', insert=(x_offset + box_size * len(target_seq) + 16, y_offset + box_size - 3), style="font-size:15px; font-family:Courier"))
     dwg.add(dwg.text('Mismatches', insert=(box_size * (len(target_seq) + 1) + 90, y_offset + box_size - 3), style="font-size:15px; font-family:Courier"))
-    dwg.add(dwg.text('Coordinates', insert=(box_size * (len(target_seq) + 1) + 220, y_offset + box_size - 3), style="font-size:15px; font-family:Courier"))
+    dwg.add(dwg.text('Coordinates', insert=(box_size * (len(target_seq) + 1) + 200, y_offset + box_size - 3), style="font-size:15px; font-family:Courier"))
+    if genome!=None:
+        dwg.add(dwg.text('Annotation', insert=(box_size * (len(target_seq) + 1) + 450, y_offset + box_size - 3), style="font-size:15px; font-family:Courier"))
 
     # Draw aligned sequence rows
     y_offset += 1  # leave some extra space after the reference row
@@ -230,9 +252,13 @@ def visualizeOfftargets(infile, outfile, title, PAM):
             mismatch_text = dwg.text(seq['num_mismatch'], insert=(box_size * (len(target_seq) + 1) + 130, y_offset + box_size * (line_number + 1) + 5),
                                   fill='black', style="font-size:15px; font-family:Courier")
             dwg.add(mismatch_text)
-            mismatch_text = dwg.text(seq['coord'], insert=(box_size * (len(target_seq) + 1) + 220, y_offset + box_size * (line_number + 1) + 5),
+            mismatch_text = dwg.text(seq['coord'], insert=(box_size * (len(target_seq) + 1) + 200, y_offset + box_size * (line_number + 1) + 5),
                                   fill='black', style="font-size:15px; font-family:Courier")
             dwg.add(mismatch_text)
+            if genome!= None:
+                annot_text = dwg.text(seq['annot'], insert=(box_size * (len(target_seq) + 1) + 450, y_offset + box_size * (line_number + 1) + 5),
+                                      fill='black', style="font-size:15px; font-family:Courier")
+                dwg.add(annot_text)
         else:
             reads_text = dwg.text(str(seq['reads']), insert=(box_size * (len(target_seq) + 1) + 20, y_offset + box_size * (line_number + 1) + 5),
                                   fill='black', style="font-size:15px; font-family:Courier")
@@ -240,9 +266,13 @@ def visualizeOfftargets(infile, outfile, title, PAM):
             mismatch_text = dwg.text(seq['num_mismatch'], insert=(box_size * (len(target_seq) + 1) + 130, y_offset + box_size * (line_number + 1) + 5),
                                   fill='black', style="font-size:15px; font-family:Courier")
             dwg.add(mismatch_text)
-            mismatch_text = dwg.text(seq['coord'], insert=(box_size * (len(target_seq) + 1) + 220, y_offset + box_size * (line_number + 1) + 5),
+            mismatch_text = dwg.text(seq['coord'], insert=(box_size * (len(target_seq) + 1) + 200, y_offset + box_size * (line_number + 1) + 5),
                                   fill='black', style="font-size:15px; font-family:Courier")
             dwg.add(mismatch_text)
+            if genome!= None:
+                annot_text = dwg.text(seq['annot'], insert=(box_size * (len(target_seq) + 1) + 450, y_offset + box_size * (line_number + 1) + 5),
+                                      fill='black', style="font-size:15px; font-family:Courier")
+                dwg.add(annot_text)
             reads_text02 = dwg.text(u"\u007D", insert=(box_size * (len(target_seq) + 1) + 7, y_offset + box_size * (line_number + 1) + 5),
                                   fill='black', style="font-size:23px; font-family:Courier")
             dwg.add(reads_text02)
@@ -253,12 +283,13 @@ def main():
     parser.add_argument("-f","--identified_file", help="FullPath/output file from reAlignment_circleseq.py", required=True)
     parser.add_argument("-o","--outfile", help="FullPath/VIZ", required=True)
     parser.add_argument("-t","--title", help="Plot title", required=True)
+    parser.add_argument("-g","--genome", help="if specified, homer annotation will be performed", default=None)
     parser.add_argument("--PAM", help="PAM sequence", default="NGG")    
     args = parser.parse_args()
 
     print(args)
 
-    visualizeOfftargets(args.identified_file, args.outfile, args.title, args.PAM)
+    visualizeOfftargets(args.identified_file, args.outfile, args.title, args.PAM,args.genome)
 
 if __name__ == "__main__":
 
