@@ -31,6 +31,9 @@ changeseq.py -h
 
 ## BWA 0.7.17 and samtools 1.9 are automatically installed
 
+## If Homer is available, the identified off-targets will be annotated using "annotatePeaks.pl", specify the genome version in the YAML file.
+
+
 ```
 
 Alternatively, you can git clone this repository and install
@@ -120,6 +123,7 @@ When running the end-to-end analysis functionality of the CHANGEseq package a nu
 - `mismatch_threshold`: Number of tolerated gaps in the fuzzy target search setp. We recommend leaving it to the default value of 6.
 - `read_length`: Fastq file read length, default is 151.
 - `PAM`: PAM sequence, default is NGG.
+- `genome`: used for homer peak annotation, e.g., hg19, hg38, mm9, or mm10.
 - `merged_analysis`: Whether or not the paired read merging step should takingTrue
 - `samples`: Lists the samples you wish to analyze and the details for each. Each sample name should be nested under the top level samples key, and each sample detail should be nested under the sample name. See the sample manifest for an example.
     - For each sample, you must provide the following parameters:
@@ -141,7 +145,30 @@ When running the full pipeline, the results of each step are outputted to the `o
 
 # FAQ
 
-None yet, we will keep this updated as needed.
+## Homer installation
+
+```
+
+conda install -c bioconda homer
+
+# To install genome annotation
+# Ref: http://homer.ucsd.edu/homer/introduction/configure.html
+
+## Suppose you want to install hg19, follow the command here:
+
+annotatePeaks.pl xxx hg19
+
+## You should be able to see:
+
+!!!!Genome hg19 not found in /rgs01/project_space/tsaigrp/Genomics/common/anaconda3/envs/changeseq/share/homer-4.11-2/.//config.txt
+
+	To check if is available, run "perl /rgs01/project_space/tsaigrp/Genomics/common/anaconda3/envs/changeseq/share/homer-4.11-2/.//configureHomer.pl -list"
+	If so, add it by typing "perl /rgs01/project_space/tsaigrp/Genomics/common/anaconda3/envs/changeseq/share/homer-4.11-2/.//configureHomer.pl -install hg19"
+
+## Copy and paste the perl command to install genome annotation
+```
+
+
 
 [version-shield]: https://img.shields.io/conda/v/tsailabsj/changeseq.svg
 [version-url]: https://anaconda.org/tsailabSJ/changeseq
