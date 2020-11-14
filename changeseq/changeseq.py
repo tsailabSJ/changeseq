@@ -35,6 +35,8 @@ class CircleSeq:
         self.all_chromosomes = False
         self.variant_analysis = False
         self.genome = None
+        self.refseq_names = None
+
 
     def parseManifest(self, manifest_path, sample='all'):
         logger.info('Loading manifest...')
@@ -73,6 +75,9 @@ class CircleSeq:
                 self.variant_analysis = manifest_data['variant_analysis']
             if 'genome' in manifest_data:
                 self.genome = manifest_data['genome']
+                if self.genome in ['hg38','hg19']:
+                    p_dir = os.path.dirname(os.path.realpath(__file__))
+                    self.refseq_names = p_dir+"/refseq_gene_name.list"
             # Allow the user to specify PAM seq. Yichao 4/29/2020
             if 'PAM' in manifest_data:
                 self.PAM = manifest_data['PAM']
@@ -216,7 +221,7 @@ class CircleSeq:
                 try:
                     infile = os.path.join(self.analysis_folder, 'identified', sample + '_identified_matched.txt')
                     outfile = os.path.join(self.analysis_folder, 'visualization', sample + '_offtargets')
-                    visualizeOfftargets(infile, outfile, title=sample,PAM=self.PAM,genome=self.genome)
+                    visualizeOfftargets(infile, outfile, title=sample,PAM=self.PAM,genome=self.genome,refseq_names=self.refseq_names)
                 except Exception as e:
                     logger.error('Error visualizing off-target sites: %s'%(sample))
                     logger.error(traceback.format_exc())

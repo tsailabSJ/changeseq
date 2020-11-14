@@ -20,17 +20,46 @@ colors = {'G': '#F5F500', 'A': '#FF5454', 'T': '#00D118', 'C': '#26A8FF', 'N': '
 for c in ['Y','S','W','K','M','B','D','H','V','.']:
     colors[c] = "#B3B3B3"
     
-def parse_homer(identified,homer_output,genome):
+def refseqID_to_HGNC_symbol(x,myDict):
+    if "(" in x:
+        ID = x.split()[1].split(",")[0].replace(")","").replace("(","")
+        # print (ID)
+        if ID in myDict:
+            gene = myDict[ID]
+            # print (ID,gene)
+            return x.replace(ID,gene)
+    return x
+
+def reformat_homer_annotation(r):
+    if r.Annotation =="Intergenic":
+        return "%s (%s)"%(r.Annotation,r['Gene Name'])
+    return r.Annotation
+def parse_homer(identified,homer_output,genome,refseq_names=None):
     select_col="Annotation"
     command = "annotatePeaks.pl %s %s > %s"%(identified,genome,homer_output)
     os.system(command)
     df = pd.read_csv(identified,sep="\t")
     df.index = df['Genomic Coordinate'].to_list()
     df2 = pd.read_csv(homer_output,sep="\t",index_col=0)
+    df2[select_col] = df2.apply(reformat_homer_annotation,axis=1)
     df['Annotation'] = df2[select_col]
+    if refseq_names!=None:
+        myDict = parse_HGNC(refseq_names)
+        df['Annotation'] = [refseqID_to_HGNC_symbol(x,myDict) for x in df.Annotation]
     out = identified.replace(".txt",".annot.tsv")
     df.to_csv(out,sep="\t",index=False)
     return out
+
+def parse_HGNC(f):
+    refseq = "#name"
+    symbol = "name2"
+    df = pd.read_csv(f,sep="\t")
+    # print (df.head())
+    df = df[[refseq,symbol]]
+    df = df.dropna()
+    df.index = df[refseq].to_list()
+    # print (df.head())
+    return df[symbol].to_dict()
 def parseSitesFile(infile):
     offtargets = []
     total_seq = 0
@@ -102,7 +131,7 @@ def find_PAM(seq,PAM):
 				PAM_index=20
 	return PAM_index
 
-def visualizeOfftargets(infile, outfile, title, PAM, genome=None):
+def visualizeOfftargets(infile, outfile, title, PAM, genome=None,refseq_names=None):
 
     output_folder = os.path.dirname(outfile)
     if not os.path.exists(output_folder):
@@ -110,7 +139,7 @@ def visualizeOfftargets(infile, outfile, title, PAM, genome=None):
 
 
     if genome!=None:
-        infile = parse_homer(infile,outfile+".raw.homer.tsv",genome)
+        infile = parse_homer(infile,outfile+".raw.homer.tsv",genome,refseq_names=refseq_names)
     # Get offtargets array from file
     offtargets, target_seq, total_seq = parseSitesFile(infile)
 
@@ -284,12 +313,13 @@ def main():
     parser.add_argument("-o","--outfile", help="FullPath/VIZ", required=True)
     parser.add_argument("-t","--title", help="Plot title", required=True)
     parser.add_argument("-g","--genome", help="if specified, homer annotation will be performed", default=None)
+    parser.add_argument("-a","--annotation", help="refseqID to gene name mapping", default=None)
     parser.add_argument("--PAM", help="PAM sequence", default="NGG")    
     args = parser.parse_args()
 
     print(args)
 
-    visualizeOfftargets(args.identified_file, args.outfile, args.title, args.PAM,args.genome)
+    visualizeOfftargets(args.identified_file, args.outfile, args.title, args.PAM,args.genome,args.annotation)
 
 if __name__ == "__main__":
 
