@@ -108,6 +108,10 @@ changeseq.py all --manifest CIRCLEseq_MergedTest.yaml
 
 ```
 
+## Example Output
+
+![x](example_output.png)
+
 # Writing A Manifest File
 When running the end-to-end analysis functionality of the CHANGEseq package a number of inputs are required. To simplify the formatting of these inputs and to encourage reproducibility, these parameters are inputted into the pipeline via a manifest formatted as a YAML file. YAML files allow easy-to-read specification of key-value pairs. This allows us to easily specify our parameters. The following fields are required in the manifest:
 
