@@ -20,6 +20,7 @@ import findCleavageSites
 import callVariants
 
 logger = log.createCustomLogger('root')
+p_dir = os.path.dirname(os.path.realpath(__file__))
 
 class CircleSeq:
 
@@ -76,8 +77,7 @@ class CircleSeq:
             if 'genome' in manifest_data:
                 self.genome = manifest_data['genome']
                 if self.genome in ['hg38','hg19']:
-                    p_dir = os.path.dirname(os.path.realpath(__file__))
-                    self.refseq_names = p_dir+"/refseq_gene_name.list"
+                    self.refseq_names = p_dir+"/refseq_gene_name.py"
             # Allow the user to specify PAM seq. Yichao 4/29/2020
             if 'PAM' in manifest_data:
                 self.PAM = manifest_data['PAM']

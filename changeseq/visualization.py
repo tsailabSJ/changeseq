@@ -50,6 +50,13 @@ def parse_homer(identified,homer_output,genome,refseq_names=None):
     df.to_csv(out,sep="\t",index=False)
     return out
 
+def get_int(x):
+	try:
+		x = float(x)
+	except:
+		return ""
+	return int(x)
+
 def parse_HGNC(f):
     refseq = "#name"
     symbol = "name2"
@@ -79,7 +86,7 @@ def parseSitesFile(infile):
             target_seq = line_items[14]
             realigned_target_seq = line_items[15]
             coord = line_items[3]
-            num_mismatch = line_items[8]
+            num_mismatch = get_int(line_items[8])
             try:
                 annot = line_items[16]
             except:
