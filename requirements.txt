@@ -7,6 +7,14 @@ statsmodels>=0.6.1
 pysam>=0.9.1.4
 svgwrite>=1.1.6
 numpy>=1.11.1
+sphinx-argparse
+git+https://github.com/rmk135/sphinxcontrib-disqus
+pandas
+nbconvert!=5.4
+ipykernel
+matplotlib
+git+https://github.com/spatialaudio/nbsphinx.git@master
+
 
 
 
