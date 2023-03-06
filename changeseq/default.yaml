@@ -1,0 +1,52 @@
+reference_genome: /rgs01/project_space/tsaigrp/Genomics/common/genomes/hg38/hg38_chroms_only.fa
+
+# if not specified, default is NGG
+PAM: NRCH
+
+# output folder directory (absolute or relative path), if not specified, default is current dir
+analysis_folder: /rgs01/project_space/tsaigrp/Genomics/common/projects/CHANGE_seq/CHANGE_seq_05022021/test/
+
+
+# PATH to analysis tools
+# If not specified, default is just the tool name, i.e., accessible in the $PATH
+bwa: bwa
+samtools: samtools
+trim_galore: trim_galore
+cutadapt: cutadapt
+
+
+# CHANGE-SEQ ABE parameters
+
+# parallel
+njobs: 6
+
+# Analysis type
+merged_analysis: True
+
+
+# read filter
+mapq_threshold: 0
+BEmodel_min_overlap: 0
+BEmodel_max_overlap: 15
+
+
+# off-target calling
+read_threshold: 3
+AG_read: 1
+
+
+mismatch_threshold: 6
+window_size: 30
+start_threshold: 1
+gap_threshold: 30
+search_radius: 30
+
+
+samples:
+    change_seq_ABE_example:
+        target: TTCTCCACAGGAGTCAGGTGNRCH # need to include PAM
+        read1: CRL2619_S9_R1_100.fastq.gz
+        read2: CRL2619_S9_R2_100.fastq.gz
+        controlread1: CRL2613_S3_R1_100.fastq.gz
+        controlread2: CRL2613_S3_R2_100.fastq.gz
+        description: CRL2619_MKSR_Digenomeseq_buffer_24h_rep2       

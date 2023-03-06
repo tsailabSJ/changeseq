@@ -25,7 +25,7 @@ for c in ['Y','S','W','K','M','B','D','H','V','.']:
 def parseSitesFile(infile):
     offtargets = []
     total_seq = 0
-    
+    target_seq = ""
     with open(infile, 'r') as f:
         f.readline()
         for line in f:
@@ -42,13 +42,16 @@ def parseSitesFile(infile):
             target_seq = line_items[14]
             realigned_target_seq = line_items[15]
             name = line_items[3]
-            overlaps = line_items[-2].split(",")
-            if len(overlaps)>0:
-                df=pd.DataFrame([int(x) for x in overlaps])
-                overlaps = str(df[0].value_counts().to_dict())
-            else:
-                overlaps = ""
-
+            overlaps = line_items[-2]
+            # if len(overlaps)>0:
+                # try:
+                    # df=pd.DataFrame([int(x) for x in overlaps])
+                # except:
+                    # print (name,overlaps)
+                    # df=pd.DataFrame(overlaps)
+                # overlaps = str(df[0].value_counts().sort_values(ascending=False).head(n=10).to_json())
+            # else:
+                # overlaps = ""
             if no_bulge_offtarget_sequence != '' or bulge_offtarget_sequence != '':
                 if no_bulge_offtarget_sequence:
                     total_seq += 1
@@ -76,15 +79,25 @@ def check_mismatch(a,b):
         return True
     else:
         return False
-
+def write_fasta(file_name,myDict):
+	out = open(file_name,"wt")
+	for k in myDict:
+		out.write(">"+k+"\n")
+		out.write(myDict[k]+"\n")
+	out.close()
 def vis_unmached(infile,outdir):
     file = infile.replace("_identified_matched.txt","_identified_unmatched.txt")
     label = infile.split("/")[-1].replace("_identified_matched.txt","")
-    command0 = ''' awk -F "\\t" '{print ">"$4"_"$5"\\n"$10}' %s > %s.fa'''%(file,label)
-    command1 = "module load conda3;source activate /home/yli11/.conda/envs/py2;muscle -in %s.fa -out %s.aln -clwstrict"%(label,label)
+    df = pd.read_csv(file,setp="\t",header=None)
+    df = df.sort_values(4,ascending=False)
+    df = df.head(n=100)
+    df.index = df[3]+"_"+df[4].astype(str)
+    write_fasta("%s.fa"%(label),df[9].to_dict())
+    # command0 = ''' awk -F "\\t" '{print ">"$4"_"$5"\\n"$10}' %s > %s.fa'''%(file,label)
+    command1 = "module load conda3;source activate /home/yli11/.conda/envs/py2;muscle -maxhours 1 -in %s.fa -out %s.aln -clwstrict"%(label,label)
     command2 = "module load conda3;source activate /home/yli11/.conda/envs/py2;~/.conda/envs/py2/bin/python /home/yli11/HemTools/bin/multi_alignment.ploter.py plot --align %s.aln --prefix %s"%(label,label)
     command3 = "convert {0}.svg {0}.png; mv {0}* {1}".format(label,outdir)
-    subprocess.call(command0,shell=True)
+    # subprocess.call(command0,shell=True)
     subprocess.call(command1,shell=True)
     subprocess.call(command2,shell=True)
     subprocess.call(command3,shell=True)
@@ -102,7 +115,10 @@ def visualizeOfftargets(infile, outfile, title, PAM):
         pass
     # Get offtargets array from file
     offtargets, target_seq, total_seq = parseSitesFile(infile)
-
+    if len(offtargets) == 0:
+        print ("No off-targets in the input file")
+        exit()
+    print (target_seq)
     # Initiate canvas
     dwg = svgwrite.Drawing(outfile + '.svg', profile='full', size=(u'100%', 100 + total_seq*(box_size + 1)))
 
@@ -167,9 +183,11 @@ def visualizeOfftargets(infile, outfile, title, PAM):
     for j, seq in enumerate(offtargets):
         realigned_target_seq = offtargets[j]['realigned_target_seq']
         no_bulge_offtarget_sequence = offtargets[j]['seq']
+        if len(no_bulge_offtarget_sequence) <len(target_seq):
+            no_bulge_offtarget_sequence=""
         bulge_offtarget_sequence = offtargets[j]['bulged_seq']
         name = offtargets[j]['name']
-        overlap = offtargets[j]['overlap']
+        overlap = offtargets[j]['overlaps']
 
         if no_bulge_offtarget_sequence != '':
             k = 0

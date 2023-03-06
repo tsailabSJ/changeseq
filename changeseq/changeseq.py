@@ -5,378 +5,224 @@
 circleseq.py as the wrapper for CIRCLE-seq analysis
 """
 
-import os
-print (os.__file__)
-
 from alignReads import alignReads
 from visualization import visualizeOfftargets
-from mergeReads import mergeReads
 import argparse
 import os
 import sys
 import subprocess
 import traceback
 import log
-import yaml
-import validation
 import findCleavageSites
-import callVariants
-
+from utility import get_parameters
+from copy import deepcopy as dp
 logger = log.createCustomLogger('root')
 
 class CircleSeq:
 
-    def __init__(self):
-        self.search_radius = 20
-        self.window_size = 3
-        self.mapq_threshold = 50
-        self.start_threshold = 1
-        self.gap_threshold = 3
-        self.mismatch_threshold = 6
-        self.read_threshold = 6
-        self.BEmodel_min_overlap = 5
-        self.BEmodel_max_overlap = 15
-        self.merged_analysis = True
-        self.all_chromosomes = False
-        self.variant_analysis = False
-        ### 7/5/2020 for ABE analysis
-        self.BE_analysis = False
+	def __init__(self):
+		self.parameters = {}
+		self.output_dir = {}
+		self.findCleavageSites_input_bam = {}
+		self.vis_input_tsv = {}
+	def parseManifest(self, manifest_path, sample='all'):
+		logger.info('Loading manifest...')
+		try:
+			parameters = get_parameters(manifest_path)
+			self.parameters = dp(parameters)
+			# print (parameters)
+			if sample != 'all':
+				self.parameters['samples'] = {}
+				self.parameters['samples'][sample] = parameters['samples'][sample]
+			# print (self.parameters)
+			# Make folders for output
+			for folder in ['aligned', 'identified', 'fastq', 'visualization']:
+				self.output_dir[folder] = os.path.join(self.parameters["analysis_folder"], folder)
+				if not os.path.exists(self.output_dir[folder]):
+					os.makedirs(self.output_dir[folder])
+			# Just to initialize some default input file names for the identify and visualization steps
+			for sample in self.parameters['samples']:
+				self.findCleavageSites_input_bam[sample] = [f"{self.output_dir['aligned']}/{sample}.st.bam",f"{self.output_dir['aligned']}/Control_{sample}.st.bam"]
+			# print (self.findCleavageSites_input_bam)
+		except Exception as e:
+			logger.error(
+				'Incorrect or malformed manifest file. Please ensure your manifest contains all required fields.')
+			logger.error(traceback.format_exc())
+			sys.exit()
 
-    def parseManifest(self, manifest_path, sample='all'):
-        logger.info('Loading manifest...')
+	def alignReads(self):
+		"""BWA mapping
+		"""
+		logger.info('Aligning reads...')
+		for sample in self.parameters['samples']:
+			try:
+				bam=alignReads(trim=True, output_dir=self.output_dir['aligned'], trimmed_fastq_output=self.output_dir['fastq'],
+						   R1=self.parameters['samples'][sample]["read1"], R2=self.parameters['samples'][sample]["read2"], label=sample,
+						   **self.parameters)
+				control_bam = alignReads(trim=True, output_dir=self.output_dir['aligned'], trimmed_fastq_output=self.output_dir['fastq'],
+						   R1=self.parameters['samples'][sample]["controlread1"], R2=self.parameters['samples'][sample]["controlread2"], label="Control_"+sample,
+						   **self.parameters)
+				logger.info('Finished aligning reads to genome.')
+				self.findCleavageSites_input_bam[sample] = [bam,control_bam]
+			except Exception as e:
+				logger.error('Error aligning for sample %s.'%(sample))
+				logger.error(traceback.format_exc())
 
-        with open(manifest_path, 'r') as f:
-            manifest_data = yaml.load(f)
+	def findCleavageSites(self):
+		logger.info('Identifying off-target cleavage sites...')
+		for sample in self.parameters['samples']:
+			try:
+				# logger.info(sample)
+				bam,control_bam = self.findCleavageSites_input_bam[sample]
+				findCleavageSites.compare(bam=bam, control=control_bam, label=sample, output_dir=self.output_dir['identified'],
+							targetsite=self.parameters['samples'][sample]["target"],**self.parameters)
+			except Exception as e:
+				logger.error('Error findCleavageSites for sample %s.'%(sample))
+				logger.error(traceback.format_exc())
 
-        try:
-            # Validate manifest data
-            validation.validateManifest(manifest_data)
+	def visualize(self):
+		logger.info('Visualizing off-target sites')
 
-            self.BWA_path  = manifest_data['bwa']
-            self.reference_genome = manifest_data['reference_genome']
-            self.analysis_folder = manifest_data['analysis_folder']
+		for sample in self.parameters['samples']:
+			try:
+				infile = os.path.join(self.parameters["analysis_folder"], 'identified', sample + '_identified_matched.txt')
+				outfile = os.path.join(self.parameters["analysis_folder"], 'visualization', sample + '_offtargets')
+				visualizeOfftargets(infile, outfile, title=sample,PAM=self.parameters["PAM"])
+			except Exception as e:
+				logger.error('Error visualizing off-target sites: %s'%(sample))
+				logger.error(traceback.format_exc())
+		logger.info('Finished visualizing off-target sites')
 
-            # Allow the user to specify read threshold, window_size and search_radius if they'd like
-            if 'search_radius' in manifest_data:
-                self.search_radius = manifest_data['search_radius']
-            if 'window_size' in manifest_data:
-                self.window_size = manifest_data['window_size']
-            if 'mapq_threshold' in manifest_data:
-                self.mapq_threshold = manifest_data['mapq_threshold']
-            if 'start_threshold' in manifest_data:
-                self.start_threshold = manifest_data['start_threshold']
-            if 'gap_threshold' in manifest_data:
-                self.gap_threshold = manifest_data['gap_threshold']
-            if 'mismatch_threshold' in manifest_data:
-                self.mismatch_threshold = manifest_data['mismatch_threshold']
-            if 'read_threshold' in manifest_data:
-                self.read_threshold = manifest_data['read_threshold']
-            if 'merged_analysis' in manifest_data:
-                self.merged_analysis = manifest_data['merged_analysis']
-            if 'all_chromosomes' in manifest_data:
-                self.all_chromosomes = manifest_data['all_chromosomes']
-            if 'variant_analysis' in manifest_data:
-                self.variant_analysis = manifest_data['variant_analysis']
-            if 'BE_analysis' in manifest_data:
-                self.BE_analysis = manifest_data['BE_analysis']
-                if self.BE_analysis:
-                    self.merged_analysis = False
-            if 'BEmodel_min_overlap' in manifest_data:
-                self.BEmodel_min_overlap = manifest_data['BEmodel_min_overlap']
-            if 'BEmodel_max_overlap' in manifest_data:
-                self.BEmodel_max_overlap = manifest_data['BEmodel_max_overlap']
-            # Allow the user to specify PAM seq. Yichao 4/29/2020
-            if 'PAM' in manifest_data:
-                self.PAM = manifest_data['PAM']
-            else:
-                self.PAM = "NGG"
-            # Allow the user to specify Read Length. Yichao 4/29/2020
-            if 'read_length' in manifest_data:
-                self.read_length = manifest_data['read_length']
-            else:
-                self.read_length = 151
-            # Allow the user to specify Read Count cutoff. Yichao 4/29/2020
-            if 'read_count_cutoff' in manifest_data:
-                self.read_count_cutoff = manifest_data['read_count_cutoff']
-            else:
-                self.read_count_cutoff = 6
+	def parallel(self, manifest_path, lsf, run='all'):
+		logger.info('Submitting parallel jobs')
+		current_script = __file__
 
-            # Do not allow to run variant_analysis with merged_analysis
-            if self.merged_analysis and self.variant_analysis:
-                logger.error('merged_analysis is not compatible with variant_analysis. Please remove one option.')
-                sys.exit()
+		try:
+			for sample in self.parameters['samples']:
+				cmd = ' python {0} {1} --manifest {2} --sample {3}'.format(current_script, run, manifest_path, sample)
+				logger.info(cmd)
+				# subprocess.call(lsf.split() + [cmd])
+				# print (lsf+cmd)
+				subprocess.call(lsf + cmd,shell=True)
+			logger.info('Finished job submission')
 
-            if sample == 'all':
-                self.samples = manifest_data['samples']
-            else:
-                self.samples = {}
-                self.samples[sample] = manifest_data['samples'][sample]
-            # Make folders for output
-            for folder in ['aligned', 'identified', 'fastq', 'visualization', 'variants']:
-                output_folder = os.path.join(self.analysis_folder, folder)
-                if not os.path.exists(output_folder):
-                    os.makedirs(output_folder)
+		except Exception as e:
+			logger.error('Error submitting jobs.')
+			logger.error(traceback.format_exc())
 
-        except Exception as e:
-            logger.error('Incorrect or malformed manifest file. Please ensure your manifest contains all required fields.')
-            sys.exit()
+	def skip_align_parallel(self, manifest_path, lsf, run='skip_align'):
+		logger.info('Submitting parallel jobs')
+		current_script = __file__
 
-    def alignReads(self):
-        """BWA mapping for 3 types: 
-        
-        1. map R1, R2 separately
-        2. concat R1 R2 and map
-        3. BWA PE mode
-        
-        
-        
-        """
+		try:
+			for sample in self.parameters['samples']:
+				cmd = 'python {0} {1} --manifest {2} --sample {3}'.format(current_script, run, manifest_path, sample)
+				logger.info(cmd)
+				subprocess.call(lsf.split() + [cmd])
+			logger.info('Finished job submission')
 
-        if self.merged_analysis:
-            logger.info('Merging reads...')
-            try:
-                self.merged = {}
-                for sample in self.samples:
-                    sample_merge_path = os.path.join(self.analysis_folder, 'fastq', sample + '_merged.fastq.gz')
-                    control_sample_merge_path = os.path.join(self.analysis_folder, 'fastq', 'control_' + sample + '_merged.fastq.gz')
-                    mergeReads(self.samples[sample]['read1'],
-                               self.samples[sample]['read2'],
-                               sample_merge_path)
-                    mergeReads(self.samples[sample]['controlread1'],
-                               self.samples[sample]['controlread2'],
-                               control_sample_merge_path)
-
-                    sample_alignment_path = os.path.join(self.analysis_folder, 'aligned', sample + '.sam')
-                    control_sample_alignment_path = os.path.join(self.analysis_folder, 'aligned', 'control_' + sample + '.sam')
-
-                    alignReads(self.BWA_path,
-                               self.reference_genome,
-                               sample_merge_path,
-                               '',
-                               sample_alignment_path)
-
-                    alignReads(self.BWA_path,
-                               self.reference_genome,
-                               control_sample_merge_path,
-                               '',
-                               control_sample_alignment_path)
-
-                    self.merged[sample] = sample_alignment_path
-                    logger.info('Finished merging and aligning reads.')
-
-            except Exception as e:
-                logger.error('Error aligning')
-                logger.error(traceback.format_exc())
-                quit()
-        else:
-            logger.info('Aligning reads...')
-            try:
-                self.aligned = {}
-                self.aligned_sorted = {}
-                for sample in self.samples:
-                    sample_alignment_path = os.path.join(self.analysis_folder, 'aligned', sample + '.sam')
-                    control_sample_alignment_path = os.path.join(self.analysis_folder, 'aligned', 'control_' + sample + '.sam')
-                    alignReads(self.BWA_path,
-                               self.reference_genome,
-                               self.samples[sample]['read1'],
-                               self.samples[sample]['read2'],
-                               sample_alignment_path)
-                    alignReads(self.BWA_path,
-                               self.reference_genome,
-                               self.samples[sample]['controlread1'],
-                               self.samples[sample]['controlread2'],
-                               control_sample_alignment_path)
-                    self.aligned[sample] = sample_alignment_path
-                    self.aligned_sorted[sample] = os.path.join(self.analysis_folder, 'aligned', sample + '_sorted.bam')
-                    logger.info('Finished aligning reads to genome.')
-
-            except Exception as e:
-                logger.error('Error aligning')
-                logger.error(traceback.format_exc())
-                quit()
-
-    def findCleavageSites(self):
-        logger.info('Identifying off-target cleavage sites.')
-
-        try:
-            for sample in self.samples:
-                if self.merged_analysis:
-                    sorted_bam_file = os.path.join(self.analysis_folder, 'aligned', sample + '.bam')
-                    control_sorted_bam_file = os.path.join(self.analysis_folder, 'aligned', 'control_' + sample + '.bam')
-                else:
-                    sorted_bam_file = os.path.join(self.analysis_folder, 'aligned', sample + '_sorted.bam')
-                    control_sorted_bam_file = os.path.join(self.analysis_folder, 'aligned', 'control_' + sample + '_sorted.bam')
-                identified_sites_file = os.path.join(self.analysis_folder, 'identified', sample)
-                logger.info('Window: {0}, MAPQ: {1}, Gap: {2}, Start {3}, Mismatches {4}, Search_Radius {5}'.format(self.window_size, self.mapq_threshold, self.gap_threshold, self.start_threshold, self.mismatch_threshold, self.search_radius))
-                findCleavageSites.compare(
-                                          ref = self.reference_genome, 
-                                          bam = sorted_bam_file, 
-                                          control = control_sorted_bam_file, 
-                                          targetsite = self.samples[sample]['target'],
-                                          search_radius = self.search_radius, 
-                                          windowsize = self.window_size, 
-                                          mapq_threshold = self.mapq_threshold, 
-                                          gap_threshold = self.gap_threshold,
-                                          start_threshold = self.start_threshold, 
-                                          mismatch_threshold = self.mismatch_threshold, 
-                                          name = sample, 
-                                          cells = self.samples[sample]['description'],
-                                          out = identified_sites_file, 
-                                          all_chromosomes = self.all_chromosomes, 
-                                          merged=self.merged_analysis,
-                                          read_count_cutoff = self.read_count_cutoff,
-                                          read_length = self.read_length,
-                                          BE_analysis = self.BE_analysis,
-                                          BEmodel_min_overlap = self.BEmodel_min_overlap,
-                                          BEmodel_max_overlap = self.BEmodel_max_overlap
-                                          )
-        except Exception as e:
-            logger.error('Error identifying off-target cleavage site.')
-            logger.error(traceback.format_exc())
-            quit()
-
-    def visualize(self):
-        logger.info('Visualizing off-target sites')
-
-        # try:
-            # for sample in self.samples:
-                # if sample != 'control':
-                    # infile = os.path.join(self.analysis_folder, 'identified', sample + '_identified_matched.txt')
-                    # outfile = os.path.join(self.analysis_folder, 'visualization', sample + '_offtargets')
-                    # visualizeOfftargets(infile, outfile, title=sample)
-
-            # logger.info('Finished visualizing off-target sites')
-
-        # except Exception as e:
-            # logger.error('Error visualizing off-target sites.')
-            # logger.error(traceback.format_exc())
-
-        for sample in self.samples: ## 4/29/2020 Yichao solved: visualization stopped when sample has no off-target
-            if sample != 'control':
-                try:
-                    infile = os.path.join(self.analysis_folder, 'identified', sample + '_identified_matched.txt')
-                    outfile = os.path.join(self.analysis_folder, 'visualization', sample + '_offtargets')
-                    visualizeOfftargets(infile, outfile, title=sample,PAM=self.PAM)
-                except Exception as e:
-                    logger.error('Error visualizing off-target sites: %s'%(sample))
-                    logger.error(traceback.format_exc())
-        logger.info('Finished visualizing off-target sites')
-
-
-    def callVariants(self):
-
-        try:
-            if self.variant_analysis:
-                logger.info('Identifying genomic variants')
-
-                for sample in self.samples:
-                    sorted_bam_file = os.path.join(self.analysis_folder, 'aligned', sample + '.bam')
-                    identified_sites_file = os.path.join(self.analysis_folder, 'identified', sample + '_identified_matched.txt')
-                    variants_basename = os.path.join(self.analysis_folder, 'variants', sample)
-                    logger.info('Mismatches {0}, Search_Radius {1}'.format(self.mismatch_threshold, self.search_radius))
-                    callVariants.getVariants(identified_sites_file, self.reference_genome, sorted_bam_file, variants_basename, self.search_radius, self.mismatch_threshold)
-
-                logger.info('Finished identifying genomic variants')
-
-        except Exception as e:
-            logger.error('Error identifying genomic variants.')
-            logger.error(traceback.format_exc())
-            quit()
-
-    def parallel(self, manifest_path, lsf, run='all'):
-        logger.info('Submitting parallel jobs')
-        current_script = __file__
-
-        try:
-            for sample in self.samples:
-                cmd = 'python {0} {1} --manifest {2} --sample {3}'.format(current_script, run, manifest_path, sample)
-                logger.info(cmd)
-                subprocess.call(lsf.split() + [cmd])
-            logger.info('Finished job submission')
-
-        except Exception as e:
-            logger.error('Error submitting jobs.')
-            logger.error(traceback.format_exc())
-
-    def referenceFree(self):
-        pass
+		except Exception as e:
+			logger.error('Error submitting jobs.')
+			logger.error(traceback.format_exc())
 
 def parse_args():
-    parser = argparse.ArgumentParser()
+	parser = argparse.ArgumentParser()
 
-    subparsers = parser.add_subparsers(description='Individual Step Commands',
-                                       help='Use this to run individual steps of the pipeline',
-                                       dest='command')
+	subparsers = parser.add_subparsers(description='Individual Step Commands',
+									   help='Use this to run individual steps of the pipeline',
+									   dest='command')
 
-    all_parser = subparsers.add_parser('all', help='Run all steps of the pipeline')
-    all_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
-    all_parser.add_argument('--sample', '-s', help='Specify sample to process (default is all)', default='all')
+	all_parser = subparsers.add_parser('all', help='Run all steps of the pipeline')
+	all_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
+	all_parser.add_argument('--sample', '-s', help='Specify sample to process (default is all)', default='all')
 
-    parallel_parser = subparsers.add_parser('parallel', help='Run all steps of the pipeline in parallel')
-    parallel_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
-    parallel_parser.add_argument('--lsf', '-l', help='Specify LSF CMD', default='bsub -R rusage[mem=32000] -P Genomics -q standard')
-    parallel_parser.add_argument('--run', '-r', help='Specify which steps of pipepline to run (all, align, identify, visualize, variants)', default='all')
+	skip_align_parser = subparsers.add_parser('skip_align', help='Run all steps of the pipeline')
+	skip_align_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
+	skip_align_parser.add_argument('--sample', '-s', help='Specify sample to process (default is all)',required=True)
 
-    align_parser = subparsers.add_parser('align', help='Run alignment only')
-    align_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
-    align_parser.add_argument('--sample', '-s', help='Specify sample to process (default is all)', default='all')
+	parallel_parser = subparsers.add_parser('parallel', help='Run all steps of the pipeline in parallel')
+	parallel_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
+	parallel_parser.add_argument('--lsf', '-l', help='Specify LSF CMD', default='bsub -n 6 -R "rusage[mem=20000] span[hosts=1]" -P ABE -q priority ')
+	parallel_parser.add_argument('--run', '-r', help='Specify which steps of pipepline to run (all, align, identify, visualize, variants)', default='all')
 
-    merge_parser = subparsers.add_parser('merge', help='Merge paired end reads')
-    merge_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
-    merge_parser.add_argument('--sample', '-s', help='Specify sample to process (default is all)', default='all')
+	skip_align_parallel_parser = subparsers.add_parser('skip_align_parallel', help='Run all steps of the pipeline in parallel')
+	skip_align_parallel_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
+	skip_align_parallel_parser.add_argument('--lsf', '-l', help='Specify LSF CMD', default='bsub -R rusage[mem=100000] -P ABE -q priority')
+	skip_align_parallel_parser.add_argument('--run', '-r', help='Specify which steps of pipepline to run (all, align, identify, visualize, variants)', default='skip_align')
 
-    identify_parser = subparsers.add_parser('identify', help='Run identification only')
-    identify_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
-    identify_parser.add_argument('--sample', '-s', help='Specify sample to process (default is all)', default='all')
+	align_parser = subparsers.add_parser('align', help='Run alignment only')
+	align_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
+	align_parser.add_argument('--sample', '-s', help='Specify sample to process (default is all)', default='all')
 
-    visualize_parser = subparsers.add_parser('visualize', help='Run visualization only')
-    visualize_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
-    visualize_parser.add_argument('--sample', '-s', help='Specify sample to process (default is all)', default='all')
+	merge_parser = subparsers.add_parser('merge', help='Merge paired end reads')
+	merge_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
+	merge_parser.add_argument('--sample', '-s', help='Specify sample to process (default is all)', default='all')
 
-    variants_parser = subparsers.add_parser('variants', help='Run variants analysis only')
-    variants_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
-    variants_parser.add_argument('--sample', '-s', help='Specify sample to process (default is all)', default='all')
+	identify_parser = subparsers.add_parser('identify', help='Run identification only')
+	identify_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
+	identify_parser.add_argument('--sample', '-s', help='Specify sample to process (default is all)', default='all')
 
-    reference_free_parser = subparsers.add_parser('reference-free', help='Run reference-free discovery only')
-    reference_free_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
-    reference_free_parser.add_argument('--sample', '-s', help='Specify sample to process (default is all)', default='all')
+	visualize_parser = subparsers.add_parser('visualize', help='Run visualization only')
+	visualize_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
+	visualize_parser.add_argument('--sample', '-s', help='Specify sample to process (default is all)', default='all')
 
-    return parser.parse_args()
+	variants_parser = subparsers.add_parser('variants', help='Run variants analysis only')
+	variants_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
+	variants_parser.add_argument('--sample', '-s', help='Specify sample to process (default is all)', default='all')
+
+	reference_free_parser = subparsers.add_parser('reference-free', help='Run reference-free discovery only')
+	reference_free_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
+	reference_free_parser.add_argument('--sample', '-s', help='Specify sample to process (default is all)', default='all')
+
+	return parser.parse_args()
 
 def main():
-    args = parse_args()
+	args = parse_args()
 
-    if args.command == 'all':
-        c = CircleSeq()
-        c.parseManifest(args.manifest, args.sample)
-        c.alignReads()
-        c.findCleavageSites()
-        c.visualize()
-        c.callVariants()
-    elif args.command == 'parallel':
-        c = CircleSeq()
-        c.parseManifest(args.manifest)
-        c.parallel(args.manifest, args.lsf, args.run)
-    elif args.command == 'align':
-        c = CircleSeq()
-        c.parseManifest(args.manifest, args.sample)
-        c.alignReads()
-    elif args.command == 'identify':
-        c = CircleSeq()
-        c.parseManifest(args.manifest, args.sample)
-        c.findCleavageSites()
-    elif args.command == 'merge':
-        c = CircleSeq()
-        c.parseManifest(args.manifest, args.sample)
-        c.mergeAlignReads()
-    elif args.command == 'visualize':
-        c = CircleSeq()
-        c.parseManifest(args.manifest, args.sample)
-        c.visualize()
-    elif args.command == 'variants':
-        c = CircleSeq()
-        c.parseManifest(args.manifest, args.sample)
-        c.callVariants()
+	if args.command == 'all':
+		c = CircleSeq()
+		c.parseManifest(args.manifest, args.sample)
+		c.alignReads()
+		c.findCleavageSites()
+		c.visualize()
+		# c.callVariants()
+		# c.extract_deamination_position()
+		# c.extract_outward_reads()
+	elif args.command == 'skip_align':
+		c = CircleSeq()
+		c.parseManifest(args.manifest, args.sample)
+		c.findCleavageSites()
+		c.visualize()
+		# c.callVariants()
+	elif args.command == 'parallel':
+		c = CircleSeq()
+		c.parseManifest(args.manifest)
+		c.parallel(args.manifest, args.lsf, args.run)
+	elif args.command == 'skip_align_parallel':
+		c = CircleSeq()
+		c.parseManifest(args.manifest)
+		c.skip_align_parallel(args.manifest, args.lsf, args.run)
+	elif args.command == 'align':
+		c = CircleSeq()
+		c.parseManifest(args.manifest, args.sample)
+		c.alignReads()
+	elif args.command == 'identify':
+		c = CircleSeq()
+		c.parseManifest(args.manifest, args.sample)
+		c.findCleavageSites()
+		c.visualize()
+	elif args.command == 'merge':
+		c = CircleSeq()
+		c.parseManifest(args.manifest, args.sample)
+		c.mergeAlignReads()
+	elif args.command == 'visualize':
+		c = CircleSeq()
+		c.parseManifest(args.manifest, args.sample)
+		c.visualize()
+	elif args.command == 'variants':
+		c = CircleSeq()
+		c.parseManifest(args.manifest, args.sample)
+		c.callVariants()
 
 if __name__ == '__main__':
-    main()
+	main()
