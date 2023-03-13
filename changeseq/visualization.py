@@ -285,14 +285,14 @@ def visualizeOfftargets(infile, outfile, title, PAM, genome=None,refseq_names=No
             reads_text = dwg.text(str(seq['reads']), insert=(box_size * (len(target_seq) + 1) + 20, y_offset + box_size * (line_number + 2) - 2),
                                   fill='black', style="font-size:15px; font-family:Courier")
             dwg.add(reads_text)
-            mismatch_text = dwg.text(seq['num_mismatch'], insert=(box_size * (len(target_seq) + 1) + 130, y_offset + box_size * (line_number + 1) + 5),
+            mismatch_text = dwg.text(seq['num_mismatch'], insert=(box_size * (len(target_seq) + 1) + 130, y_offset + box_size * (line_number + 2) - 2),
                                   fill='black', style="font-size:15px; font-family:Courier")
             dwg.add(mismatch_text)
-            mismatch_text = dwg.text(seq['coord'], insert=(box_size * (len(target_seq) + 1) + 200, y_offset + box_size * (line_number + 1) + 5),
+            mismatch_text = dwg.text(seq['coord'], insert=(box_size * (len(target_seq) + 1) + 200, y_offset + box_size * (line_number + 2) - 2),
                                   fill='black', style="font-size:15px; font-family:Courier")
             dwg.add(mismatch_text)
             if genome!= None:
-                annot_text = dwg.text(seq['annot'], insert=(box_size * (len(target_seq) + 1) + 450, y_offset + box_size * (line_number + 1) + 5),
+                annot_text = dwg.text(seq['annot'], insert=(box_size * (len(target_seq) + 1) + 450, y_offset + box_size * (line_number + 2) - 2),
                                       fill='black', style="font-size:15px; font-family:Courier")
                 dwg.add(annot_text)
         else:
