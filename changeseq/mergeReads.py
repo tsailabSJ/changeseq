@@ -8,11 +8,15 @@ def mergeReads(fastq1_filename, fastq2_filename, out):
     fastq1_file = fq(fastq1_filename)
     fastq2_file = fq(fastq2_filename)
 
-    with gzip.open(out, 'wb') as o:
-        for r1, r2 in itertools.izip(fastq1_file, fastq2_file):
+    with gzip.open(out, 'wt') as o:
+        for r1, r2 in zip(fastq1_file, fastq2_file):
             merged_sequence = reverseComplement(r1[1]) + r2[1]
             merged_quality_scores = r1[3][::-1] + r2[3]
             print(r1[0], file=o)
+            # o.write(r1[0]+"\n")
+            # o.write(merged_sequence+"\n")
+            # o.write(r1[2]+"\n")
+            # o.write(merged_quality_scores+"\n")
             print(merged_sequence, file=o)
             print(r1[2], file=o)
             print(merged_quality_scores, file=o)

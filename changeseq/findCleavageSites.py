@@ -305,7 +305,7 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
     # Yichao, add control reads
     print("Writing matched table", file=sys.stderr)
     tags_sorted = matched_dict.keys()
-    tags_sorted.sort()
+    tags_sorted = sorted(tags_sorted)
     outfile_matched = '{0}_identified_matched.txt'.format(out)
 
     o1 = open(outfile_matched, 'w')
@@ -371,7 +371,7 @@ def output_alignments(narrow_ga, ga_windows, reference_genome, target_sequence, 
     # Write unmatched table
     print("Writing unmatched table", file=sys.stderr)
     untags_sorted = unmatched_dict.keys()
-    untags_sorted.sort()
+    untags_sorted = sorted(untags_sorted)
     outfile_unmatched = '{0}_identified_unmatched.txt'.format(out)
     with open(outfile_unmatched, 'w') as o2:
         for unkey in untags_sorted:
@@ -647,7 +647,7 @@ def compare(ref, bam, control, targetsite, search_radius, windowsize, mapq_thres
 
         for iv, value in combined_ga.steps():
             if value:
-                for position in iv.xrange(step=1):
+                for position in iv.range(step=1):
                     # Define the windows
                     window = HTSeq.GenomicInterval(position.chrom, max(0, position.pos - windowsize),
                                                    position.pos + windowsize + 1)
