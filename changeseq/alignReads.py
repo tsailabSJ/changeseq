@@ -62,7 +62,7 @@ def alignReads(bwa=None, samtools=None, # Tools
 		R1,R2 = trim_reads(R1=R1, R2=R2, label=label, output_dir=trimmed_fastq_output, njobs=njobs, **kwargs)
 
 	# BWA alignment
-	opts = f"-t {njobs} -I 7,15,30,0 -k 10"
+	opts = f"-t {njobs}"
 	bwa_alignment_command = f'{bwa} mem {opts} {reference_genome} {R1} {R2} | {samtools} view -bS - > {bam_file}'
 	logger.info("BWA alignment")
 	logger.info(bwa_alignment_command)

@@ -16,7 +16,23 @@ import log
 import findCleavageSites
 from utility import get_parameters
 from copy import deepcopy as dp
+from pprint import pformat
 logger = log.createCustomLogger('root')
+
+
+try:
+    module_file = findCleavageSites.__file__
+    logger.info(f"findCleavageSites module file path: {module_file}")
+except AttributeError:
+    logger.info("findCleavageSites: (built-in module or not found)")
+
+# logger.info("Loaded modules and their file paths:")
+# for module_name, module in sys.modules.items():
+#     try:
+#         module_file = module.__file__
+#         logger.info(f"{module_name}: {module_file}")
+#     except AttributeError:
+#         logger.info(f"{module_name}: (built-in module)")
 
 class CircleSeq:
 
@@ -76,6 +92,7 @@ class CircleSeq:
 				bam,control_bam = self.findCleavageSites_input_bam[sample]
 				findCleavageSites.compare(bam=bam, control=control_bam, label=sample, output_dir=self.output_dir['identified'],
 							targetsite=self.parameters['samples'][sample]["target"],**self.parameters)
+				logger.info('findCleavage Sites self.parameters: %s', pformat(self.parameters))
 			except Exception as e:
 				logger.error('Error findCleavageSites for sample %s.'%(sample))
 				logger.error(traceback.format_exc())
@@ -142,12 +159,12 @@ def parse_args():
 
 	parallel_parser = subparsers.add_parser('parallel', help='Run all steps of the pipeline in parallel')
 	parallel_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
-	parallel_parser.add_argument('--lsf', '-l', help='Specify LSF CMD', default='bsub -n 6 -R "rusage[mem=20000] span[hosts=1]" -P ABE -q priority ')
+	parallel_parser.add_argument('--lsf', '-l', help='Specify LSF CMD', default='bsub -n 6 -R "rusage[mem=50000] span[hosts=1]" -P ABE -q priority ')
 	parallel_parser.add_argument('--run', '-r', help='Specify which steps of pipepline to run (all, align, identify, visualize, variants)', default='all')
 
 	skip_align_parallel_parser = subparsers.add_parser('skip_align_parallel', help='Run all steps of the pipeline in parallel')
 	skip_align_parallel_parser.add_argument('--manifest', '-m', help='Specify the manifest Path', required=True)
-	skip_align_parallel_parser.add_argument('--lsf', '-l', help='Specify LSF CMD', default='bsub -R rusage[mem=100000] -P ABE -q priority')
+	skip_align_parallel_parser.add_argument('--lsf', '-l', help='Specify LSF CMD', default='bsub -R rusage[mem=200000] -P ABE -q priority')
 	skip_align_parallel_parser.add_argument('--run', '-r', help='Specify which steps of pipepline to run (all, align, identify, visualize, variants)', default='skip_align')
 
 	align_parser = subparsers.add_parser('align', help='Run alignment only')

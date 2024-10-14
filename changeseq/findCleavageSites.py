@@ -516,7 +516,8 @@ def realignedSequences(targetsite_sequence, chosen_alignment, errors):
 				
 				## update indel dict, I found the deletion positions are relative if insertion occurs first
 				update_indels=[]
-				for k in indels.keys():
+				# for k in indels.keys():
+				for k in list(indels):
 					if k > m_index:
 						if not indels[k]:
 							del indels[k]

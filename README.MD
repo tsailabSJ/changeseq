@@ -4,15 +4,19 @@
 [![Platforms][platform-shield]][python-url]
 
 
-# CHANGE-seq: Circularization for High-throughput Analysis Nuclease Genome-wide Effects by Sequencing
+# CHANGE-seq-BE enables simultaneously sensitive and unbiased in vitro profiling of base editor genome-wide activity
 
-This is a repository for CHANGE-seq analytical software, which takes sample-specific paired-end FASTQ files as input and produces a list of CHANGE-seq detected off-target cleavage sites as output.
+This is a repository for CHANGE-seq-BE analytical software, which takes sample-specific paired-end FASTQ files as input and produces a list of CHANGE-seq-BE detected off-target cleavage sites as output.
+
+# Note
+
+Currently, code for CHANGE-seq and CHANGE-seq-BE are different. `CHANGE-seq-BE` is in the `dev` branch only.
 
 # Summary
 
-This package implements a pipeline that takes in reads from the CHANGE-seq assay and returns detected cleavage sites as output. The individual pipeline steps are:
+This package implements a pipeline that takes in reads from the CHANGE-seq-BE assay and returns detected cleavage sites as output. The individual pipeline steps are:
 
-1. **Merge**: Merge read1 an read2 for easier mapping to genome.
+1. **Tn5 adapter trimming**: 
 2. **Read Alignment**: Merged paired end reads from the assay are aligned to the reference genome using the BWA-MEM algorithm with default parameters (Li. H, 2009).
 3. **Cleavage Site Identification**: Mapped sites are analyzed to determine which represent high-quality cleavage sites.
 4. **Visualization of Results**: Identified on-target and off-target cleavage sites are rendered as a color-coded alignment map for easy analysis of results.
