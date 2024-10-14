@@ -27,77 +27,59 @@ The most easiest way to install change-seq pipeline is via conda.
 
 ```
 
-conda create -n changeseq -c conda-forge -c bioconda -c anaconda -c omnia -c tsailabSJ changeseq
+mamba create -n changeseqbe tsailabsj::changeseqbe
 
-source activate changeseq
+mamba activate changeseqbe
 
-changeseq.py -h
+git clone -b dev https://github.com/tsailabSJ/changeseq
+
+python changeseq/changeseq/changeseq.py -h
 
 ## BWA 0.7.17 and samtools 1.9 are automatically installed
 
 ```
 
-Alternatively, you can git clone this repository and install
-
-```
-
-git clone https://github.com/tsailabSJ/changeseq
-
-cd changeseq
-
-pip install -r requirements.txt
-
-python setup.py install
-
-changeseq.py -h
-
-## Please install BWA and samtools if you choose this option
-
-```
-
-## Download Reference Genome
-
-The CHANGEseq package requires a reference genome for read mapping. You can use any genome of your choosing, but for all of our testing and original CHANGE-seq analyses we use hg19 ([download](http://www.broadinstitute.org/ftp/pub/seq/references/Homo_sapiens_assembly19.fasta)). Be sure to (g)unzip the FASTA file before use if it is compressed.
 
 # Usage
 
-The change-seq pipeline requires a manifest yaml file specifying input files, output directory, and pipeline parameters. Once the yaml file is created, users can simply run ``change_seq.py all --manifest /path/to/manifest.yaml``
+The change-seq-be pipeline requires a manifest yaml file specifying input files, output directory, and pipeline parameters. Once the yaml file is created, users can simply run ``change_seq.py all --manifest /path/to/manifest.yaml``
 
 
 Below is an example ``manifest.yaml`` file::
 
-    reference_genome: /data/joung/genomes/Homo_sapiens_assembly19.fasta
-    analysis_folder: /data/joung/CHANGE-Seq/test2
-    
-    bwa: bwa
-    samtools: samtools
-    
-    read_threshold: 4
-    window_size: 3
-    mapq_threshold: 50
-    start_threshold: 1
-    gap_threshold: 3
-    mismatch_threshold: 6
-    search_radius: 30
-    merged_analysis: True
-    
-    samples:
-        U2OS_exp1_VEGFA_site_1:
-            target: GGGTGGGGGGAGTTTGCTCCNGG
-            read1: /data/joung/sequencing_fastq/150902_M01326_0235_000000000-AHLT8/fastq/1_S1_L001_R1_001.fastq.gz
-            read2: /data/joung/sequencing_fastq/150902_M01326_0235_000000000-AHLT8/fastq/1_S1_L001_R2_001.fastq.gz
-            controlread1: /data/joung/sequencing_fastq/150902_M01326_0235_000000000-AHLT8/fastq/4_S4_L001_R1_001.fastq.gz
-            controlread2: /data/joung/sequencing_fastq/150902_M01326_0235_000000000-AHLT8/fastq/4_S4_L001_R2_001.fastq.gz
-            description: U2OS_exp1
-        U2OS_exp1_EMX1:
-            target: GAGTCCGAGCAGAAGAAGAANGG
-            read1: /data/joung/sequencing_fastq/150902_M01326_0235_000000000-AHLT8/fastq/2_S2_L001_R1_001.fastq.gz
-            read2: /data/joung/sequencing_fastq/150902_M01326_0235_000000000-AHLT8/fastq/2_S2_L001_R2_001.fastq.gz
-            controlread1: /data/joung/sequencing_fastq/150902_M01326_0235_000000000-AHLT8/fastq/4_S4_L001_R1_001.fastq.gz
-            controlread2: /data/joung/sequencing_fastq/150902_M01326_0235_000000000-AHLT8/fastq/4_S4_L001_R2_001.fastq.gz
-            description: U2OS_exp1
+	reference_genome: /research/groups/tsaigrp/projects/Genomics/common/genomes/hg38/hg38_chroms_only.fa
+	analysis_folder: /research/groups/tsaigrp/projects/Genomics/common/projects/CHANGE_seq/CHANGE_seq_BE/test
+
+	bwa: bwa
+	samtools: samtools
+
+	read_threshold: 3
+	window_size: 30
+	mapq_threshold: 50
+	start_threshold: 1
+	gap_threshold: 30
+	mismatch_threshold: 6
+	search_radius: 30
+	merged_analysis: False
+	BEmodel_min_overlap: -30
+	BEmodel_max_overlap: 30
+	BE_analysis: True
+
+	PAM: NGG
+	genome: hg38
+
+	samples:
+	    test:
+	        target: sgRNA-seq-NGG
+	        read1: GM255_S2_R1_001.fastq.gz
+	        read2: GM255_S2_R2_001.fastq.gz
+	        controlread1: GM254_S1_R1_001.fastq.gz
+	        controlread2: GM254_S1_R2_001.fastq.gz
+	        description: GM255_CD40L_E1
 
 ## Quickstart
+
+(TODO)
 
 ```
 

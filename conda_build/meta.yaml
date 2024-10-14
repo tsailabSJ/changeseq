@@ -1,17 +1,15 @@
-{% set name = "changeseq" %}
-{% set version = "1.2.7" %}
+{% set name = "changeseqbe" %}
+{% set version = "1.0.0" %}
 
 package:
   name: "{{ name|lower }}"
   version: "{{ version }}"
 
 source:
-  url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
-  sha256: 2645edc6df9b717b5345d2822e89f9ee05a377db53a020c7153cca836e4c3e8f
+  path: .
 
 build:
   number: 0
-  script: python setup.py install --single-version-externally-managed --record=record.txt
 
 requirements:
   host:
@@ -19,6 +17,7 @@ requirements:
     - python
   run:
     - python
+    - biopython
     - bwa=0.7.17
     - htseq
     - matplotlib
@@ -27,7 +26,8 @@ requirements:
     - pyfaidx
     - pygments
     - pysam
-    - pyyaml
+    - cutadapt=3.4
+    - pyyaml=5.4.1
     - regex
     - scipy
     - setuptools
@@ -38,20 +38,11 @@ requirements:
     - zlib
     - htslib=1.9
     - samtools=1.9
-
-test:
-  imports:
-    - changeseq
+    - bedtools
 
 about:
-  home: https://github.com/tsailabSJ/changeseq
-  license: GNU General Public v2 (GPLv2)
-  license_family: GPL2
-  license_file: 
-  summary: Bioinformatic pipeline for the CHANGE-seq assay.
-  doc_url: 
-  dev_url: 
-
+  home: https://github.com/tsailabSJ/changeseq/tree/dev
+  summary: "CHANGE-seq-BE"
 extra:
   recipe-maintainers:
     - YichaoOU
