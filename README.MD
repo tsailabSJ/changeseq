@@ -23,7 +23,7 @@ This package implements a pipeline that takes in reads from the CHANGE-seq-BE as
 
 # Installation
 
-The most easiest way to install change-seq pipeline is via conda.
+The most easiest way to install change-seq-be pipeline is via conda.
 
 ```
 
@@ -35,7 +35,7 @@ git clone -b dev https://github.com/tsailabSJ/changeseq
 
 python changeseq/changeseq/changeseq.py -h
 
-## BWA 0.7.17 and samtools 1.9 are automatically installed
+## All dependencies are installed, e.g., BWA 0.7.17, samtools 1.9
 
 ```
 
