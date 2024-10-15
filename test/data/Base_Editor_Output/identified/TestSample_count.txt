@@ -1,3 +1,0 @@
-#Chromosome	zero_based_Position	Nuclease_Position_Reads	Control_Position_Reads	Nuclease_Window_Reads	Control_Window_Reads	p_Value	narrow_p_Value	control_p_Value	control_narrow_p_Value
-2	9866	2.0	0.0	2.0	0.0	0.0	0.0	0.0	0.0
-2	9875	2.0	0.0	2.0	0.0	0.0	0.0	0.0	0.0

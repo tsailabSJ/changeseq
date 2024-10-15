@@ -1,4 +1,0 @@
-Chromosome	Start	End	Genomic Coordinate	Nuclease_Read_Count	Strand	Control_Read_Count	Site_Sequence	Site_Substitution_Number	Site_Sequence_Gaps_Allowed	File_Name	Cell	Target_site	Full_Name	Target_Sequence	Realigned_Target_Sequence	Nuclease_overlap_bp_list	Control_overlap_bp_list
-1	10000	10023	1:10000-10023	16	-	0.0	GAAGTAGAGCAGAAGAAGAAGCG	5	AAGTA-GAGCAGAAGAAGAAGCG	TestSample.bam	TestCell	TestSample	TestSample_TestCell_1:10000-10023_16	GAGTCCGAGCAGAAGAAGAANGG	GAGTCCGAGCAGAAGAAGAANGG		
-2	10000	10023	2:10000-10023	32	+	0.0	GAGTCCGAGCAGAAGAAGAAGGG	0		TestSample.bam	TestCell	TestSample	TestSample_TestCell_2:10000-10023_32	GAGTCCGAGCAGAAGAAGAANGG	none		
-8	10000	10023	8:10000-10023	10	-	0.0	AAGGCCAAGCAGAAGAGTAATGG	5		TestSample.bam	TestCell	TestSample	TestSample_TestCell_8:10000-10023_10	GAGTCCGAGCAGAAGAAGAANGG	none		
