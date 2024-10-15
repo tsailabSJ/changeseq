@@ -4,11 +4,10 @@ analysis_folder: /home/yli11/dirs/changeseq_py3/test
 bwa: bwa
 samtools: samtools
 
-read_threshold: 3
+read_threshold: 4
 window_size: 30
 mapq_threshold: 50
 start_threshold: 1
-gap_threshold: 30
 mismatch_threshold: 6
 search_radius: 30
 merged_analysis: False

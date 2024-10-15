@@ -16,10 +16,12 @@ Currently, code for CHANGE-seq and CHANGE-seq-BE are different. `CHANGE-seq-BE` 
 
 This package implements a pipeline that takes in reads from the CHANGE-seq-BE assay and returns detected cleavage sites as output. The individual pipeline steps are:
 
-1. **Tn5 adapter trimming**: 
-2. **Read Alignment**: Merged paired end reads from the assay are aligned to the reference genome using the BWA-MEM algorithm with default parameters (Li. H, 2009).
-3. **Cleavage Site Identification**: Mapped sites are analyzed to determine which represent high-quality cleavage sites.
-4. **Visualization of Results**: Identified on-target and off-target cleavage sites are rendered as a color-coded alignment map for easy analysis of results.
+1. **Tn5 adapter trimming**: `cutadapt` remove adapter CTGTCTCTTATACACATCTACGTAGATGTGTATAAGAGACAG
+2. **Read Alignment**: `bwa mem` paired end mapping
+3. **Read Filtering**: (1) `mapq_threshold` (2) only outward, self-overlapped PE reads `BEmodel_min_overlap` and `BEmodel_max_overlap`. 
+4. **Cleavage Site Identification**: Mapped sites are analyzed to determine which represent high-quality cleavage sites. (Same algorithm as before, peak is identified in a `window_size`)
+5. **Off-target Identification**: Off-targets are identified by extending the cleavage site +/- `search_radius` and then fuzzy alignment to the on-target sequence `mismatch_threshold`. Gap penalty is 3 and mismatch penalty is 1. Output files are two. `identified_matched.txt` contains off-target sequences similar to on-target. `identified_unmatched.txt` contains off-target coordinates, sequences are not similar to on-target.
+6. **Visualization of Results**: Identified on-target and off-target cleavage sites are rendered as a color-coded alignment map for easy analysis of results. (Same algorithm as before)
 
 # Installation
 
@@ -47,17 +49,16 @@ The change-seq-be pipeline requires a manifest yaml file specifying input files,
 
 Below is an example ``manifest.yaml`` file::
 
-	reference_genome: /research/groups/tsaigrp/projects/Genomics/common/genomes/hg38/hg38_chroms_only.fa
-	analysis_folder: /research/groups/tsaigrp/projects/Genomics/common/projects/CHANGE_seq/CHANGE_seq_BE/test
+	reference_genome: /home/yli11/dirs/changeseq_py3/test/hg38.example.fa
+	analysis_folder: /home/yli11/dirs/changeseq_py3/test
 
 	bwa: bwa
 	samtools: samtools
 
-	read_threshold: 3
+	read_threshold: 4
 	window_size: 30
 	mapq_threshold: 50
 	start_threshold: 1
-	gap_threshold: 30
 	mismatch_threshold: 6
 	search_radius: 30
 	merged_analysis: False
@@ -65,29 +66,32 @@ Below is an example ``manifest.yaml`` file::
 	BEmodel_max_overlap: 30
 	BE_analysis: True
 
-	PAM: NGG
+	PAM: NRCH
 	genome: hg38
 
 	samples:
 	    test:
-	        target: sgRNA-seq-NGG
-	        read1: GM255_S2_R1_001.fastq.gz
-	        read2: GM255_S2_R2_001.fastq.gz
-	        controlread1: GM254_S1_R1_001.fastq.gz
-	        controlread2: GM254_S1_R2_001.fastq.gz
-	        description: GM255_CD40L_E1
+	        target: TTCTCCACAGGAGTCAGGTGNRCH
+	        read1: CRL3128_S1_R1_001.fastq
+	        read2: CRL3128_S1_R2_001.fastq
+	        controlread1: CRL3128_S1_R1_001.fastq
+	        controlread2: CRL3128_S1_R2_001.fastq
+	        description: test
+
 
 ## Quickstart
 
-(TODO)
+![example_vis](test/example_vis.png)
 
 ```
 
-git clone https://github.com/tsailabSJ/changeseq
+git clone -b dev https://github.com/tsailabSJ/changeseq
 
 cd changeseq/test
 
-changeseq.py all --manifest CIRCLEseq_MergedTest.yaml
+# modify reference_genome and analysis_folder in test.yaml, need abs path
+
+python ../changeseq/changeseq.py all -m test.yaml
 
 ```
 
@@ -99,14 +103,13 @@ When running the end-to-end analysis functionality of the CHANGEseq package a nu
 - `bwa`: The absolute path to the `bwa` executable
 - `samtools`: The absolute path to the `samtools` executable
 - `read_threshold`: The minimum number of reads at a location for that location to be called as a site. We recommend leaving it to the default value of 4.
-- `window_size`: Size of the sliding window, we recommend leaving it to the default value of 3.
+- `window_size`: Size of the sliding window, we recommend leaving it to the default value of 30.
 - `mapq_threshold`: Minimum read mapping quality score. We recommend leaving it to the default value of 50.
 - `start_threshold`: Tolerance for breakpoint location. We recommend leaving it to the default value of 1.
-- `gap_threshold`: Distance between breakpoints. We recommend leaving it to the default value of 3 for Cas9.
-- `mismatch_threshold`: Number of tolerated gaps in the fuzzy target search setp. We recommend leaving it to the default value of 6.
+- `mismatch_threshold`: Number of tolerated distance in the fuzzy target search setp. We recommend leaving it to the default value of 6.
 - `read_length`: Fastq file read length, default is 151.
 - `PAM`: PAM sequence, default is NGG.
-- `merged_analysis`: Whether or not the paired read merging step should takingTrue
+- `merged_analysis`: for BE, this is false
 - `samples`: Lists the samples you wish to analyze and the details for each. Each sample name should be nested under the top level samples key, and each sample detail should be nested under the sample name. See the sample manifest for an example.
     - For each sample, you must provide the following parameters:
         - `target`: Target sequence for that sample. Accepts degenerate bases.
