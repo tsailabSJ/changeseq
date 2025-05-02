@@ -56,7 +56,6 @@ Below is an example ``manifest.yaml`` file::
 	samtools: samtools
 
 	read_count_cutoff: 1
-	edited_read_cutoff: 1
 	window_size: 30
 	mapq_threshold: 50
 	mismatch_threshold: 7
@@ -102,7 +101,7 @@ When running the end-to-end analysis functionality of the CHANGEseq package a nu
 - `output_folder`: The absolute path to the folder in which all pipeline outputs will be saved.
 - `bwa`: The absolute path to the `bwa` executable
 - `samtools`: The absolute path to the `samtools` executable
-- `read_count_cutoff`: The minimum number of reads at a location for that location to be called as a site. 
+- `read_count_cutoff`: The minimum number of reads at a location for that location to be called as a site. For maximal sensitivity, we don't filter based on read count.
 - `window_size`: Size of the sliding window, we recommend leaving it to the default value of 30.
 - `mapq_threshold`: Minimum read mapping quality score. We recommend leaving it to the default value of 50.
 - `mismatch_threshold`: Number of tolerated distance in the fuzzy target search setp. We recommend leaving it to the default value of 7.
