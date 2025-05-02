@@ -55,15 +55,15 @@ Below is an example ``manifest.yaml`` file::
 	bwa: bwa
 	samtools: samtools
 
-	read_threshold: 4
+	read_count_cutoff: 1
+	edited_read_cutoff: 1
 	window_size: 30
 	mapq_threshold: 50
-	start_threshold: 1
-	mismatch_threshold: 6
+	mismatch_threshold: 7
 	search_radius: 30
 	merged_analysis: False
-	BEmodel_min_overlap: -30
-	BEmodel_max_overlap: 30
+	BEmodel_min_overlap: 5
+	BEmodel_max_overlap: 15
 	BE_analysis: True
 
 	PAM: NRCH
@@ -102,12 +102,12 @@ When running the end-to-end analysis functionality of the CHANGEseq package a nu
 - `output_folder`: The absolute path to the folder in which all pipeline outputs will be saved.
 - `bwa`: The absolute path to the `bwa` executable
 - `samtools`: The absolute path to the `samtools` executable
-- `read_threshold`: The minimum number of reads at a location for that location to be called as a site. We recommend leaving it to the default value of 4.
+- `read_count_cutoff`: The minimum number of reads at a location for that location to be called as a site. 
 - `window_size`: Size of the sliding window, we recommend leaving it to the default value of 30.
 - `mapq_threshold`: Minimum read mapping quality score. We recommend leaving it to the default value of 50.
-- `start_threshold`: Tolerance for breakpoint location. We recommend leaving it to the default value of 1.
-- `mismatch_threshold`: Number of tolerated distance in the fuzzy target search setp. We recommend leaving it to the default value of 6.
-- `read_length`: Fastq file read length, default is 151.
+- `mismatch_threshold`: Number of tolerated distance in the fuzzy target search setp. We recommend leaving it to the default value of 7.
+- `BEmodel_min_overlap`, `BEmodel_max_overlap`: Assuming 1-10 positions are editable, the BEmodel_min_overlap and max should be 5 to 15.  For CBE, we use 6 to 16.
+- `search_radius`: Extend window center upstream and down-stream +/- search_radius bp, to look for off-target sequence.
 - `PAM`: PAM sequence, default is NGG.
 - `merged_analysis`: for BE, this is false
 - `samples`: Lists the samples you wish to analyze and the details for each. Each sample name should be nested under the top level samples key, and each sample detail should be nested under the sample name. See the sample manifest for an example.
