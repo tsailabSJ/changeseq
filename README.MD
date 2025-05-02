@@ -105,7 +105,7 @@ When running the end-to-end analysis functionality of the CHANGEseq package a nu
 - `window_size`: Size of the sliding window, we recommend leaving it to the default value of 30.
 - `mapq_threshold`: Minimum read mapping quality score. 
 - `mismatch_threshold`: Number of tolerated distance in the fuzzy target search setp. We recommend leaving it to the default value of 7.
-- `BEmodel_min_overlap`, `BEmodel_max_overlap`: Assuming 1-10 positions are editable, the BEmodel_min_overlap and max should be 5 to 15.  For CBE, we use 6 to 16. For max sensitivity, users can do 1 to 20.
+- `BEmodel_min_overlap`, `BEmodel_max_overlap`: Assuming 1-10 positions are editable, the BEmodel_min_overlap and max should be 5 to 15.  For CBE, we use 6 to 16. For max sensitivity, users can do 0 to 20.
 - `search_radius`: Extend window center upstream and down-stream +/- search_radius bp, to look for off-target sequence.
 - `PAM`: PAM sequence, default is NGG.
 - `merged_analysis`: for BE, this is false
