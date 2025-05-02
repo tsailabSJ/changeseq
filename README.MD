@@ -57,7 +57,7 @@ Below is an example ``manifest.yaml`` file::
 
 	read_count_cutoff: 1
 	window_size: 30
-	mapq_threshold: 50
+	mapq_threshold: 1
 	mismatch_threshold: 7
 	search_radius: 30
 	merged_analysis: False
@@ -103,9 +103,9 @@ When running the end-to-end analysis functionality of the CHANGEseq package a nu
 - `samtools`: The absolute path to the `samtools` executable
 - `read_count_cutoff`: The minimum number of reads at a location for that location to be called as a site. For maximal sensitivity, we don't filter based on read count.
 - `window_size`: Size of the sliding window, we recommend leaving it to the default value of 30.
-- `mapq_threshold`: Minimum read mapping quality score. We recommend leaving it to the default value of 50.
+- `mapq_threshold`: Minimum read mapping quality score. 
 - `mismatch_threshold`: Number of tolerated distance in the fuzzy target search setp. We recommend leaving it to the default value of 7.
-- `BEmodel_min_overlap`, `BEmodel_max_overlap`: Assuming 1-10 positions are editable, the BEmodel_min_overlap and max should be 5 to 15.  For CBE, we use 6 to 16.
+- `BEmodel_min_overlap`, `BEmodel_max_overlap`: Assuming 1-10 positions are editable, the BEmodel_min_overlap and max should be 5 to 15.  For CBE, we use 6 to 16. For max sensitivity, users can do 1 to 20.
 - `search_radius`: Extend window center upstream and down-stream +/- search_radius bp, to look for off-target sequence.
 - `PAM`: PAM sequence, default is NGG.
 - `merged_analysis`: for BE, this is false
