@@ -125,7 +125,7 @@ When running the full pipeline, the results of each step are outputted to the `o
 - `output_folder/aligned`: Contains an alignment `.sam`, alignment `.bam`, sorted `bam`, and `.bai` index file for each sample.
 - `output_folder/fastq`: Merged `.fastq.gz` files for each sample.
 - `output_folder/identified`: Contains tab-delimited `.txt` files for each sample containing the identified DSBs, control DSBs, filtered DSBs, and read quantification.
-- `output_folder/visualization`: Contains a `.svg` vector image representing an alignment of all detected off-targets to the targetsite for each sample.
+- `output_folder/visualization`: Contains a `.svg` vector image representing an alignment of all detected off-targets to the targetsite for each sample. The text shown besides each target is the read count, coordinates, number of converted reads (detected A to G reads), number of reads failed BE_overlap cutoff (e.g., inward reads, or outward reads overlap too much). The last two values are for debug purposes.
 
 # FAQ
 
