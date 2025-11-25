@@ -10,7 +10,7 @@ This is a repository for CHANGE-seq-BE analytical software, which takes sample-s
 
 # Note
 
-Currently, code for CHANGE-seq and CHANGE-seq-BE are different. `CHANGE-seq-BE` is in the `dev` branch only.
+Currently, code for CHANGE-seq and CHANGE-seq-BE are different. `CHANGE-seq-BE` is in the `BE` branch only.
 
 # Summary
 
