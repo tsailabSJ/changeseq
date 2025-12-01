@@ -1,7 +1,4 @@
 
-[![Version][version-shield]][version-url]
-[![Python versions][python-shield]][python-url]
-[![Platforms][platform-shield]][python-url]
 
 
 # CHANGE-seq-BE enables simultaneously sensitive and unbiased in vitro profiling of base editor genome-wide activity
