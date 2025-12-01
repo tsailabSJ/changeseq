@@ -1,3 +1,6 @@
+[![Version][version-shield]][version-url]
+[![Python versions][python-shield]][python-url]
+[![Platforms][platform-shield]][python-url]
 
 
 
@@ -128,8 +131,8 @@ When running the full pipeline, the results of each step are outputted to the `o
 
 None yet, we will keep this updated as needed.
 
-[version-shield]: https://img.shields.io/conda/v/tsailabsj/changeseq.svg
-[version-url]: https://anaconda.org/tsailabSJ/changeseq
-[python-shield]: https://img.shields.io/pypi/pyversions/changeseq.svg
-[python-url]: https://pypi.python.org/pypi/changeseq
-[platform-shield]: https://anaconda.org/tsailabsj/changeseq/badges/platforms.svg
+[version-shield]: https://img.shields.io/conda/v/tsailabsj/changeseqbe.svg
+[version-url]: https://anaconda.org/tsailabSJ/changeseqbe
+[python-shield]: https://img.shields.io/badge/Python-3-blue
+[python-url]: https://img.shields.io/badge/Python-3-blue
+[platform-shield]: https://anaconda.org/tsailabsj/changeseqbe/badges/platforms.svg
