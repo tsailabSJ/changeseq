@@ -18,7 +18,7 @@ This package implements a pipeline that takes in reads from the CHANGE-seq-BE as
 
 1. **Tn5 adapter trimming**: `cutadapt` remove adapter CTGTCTCTTATACACATCTACGTAGATGTGTATAAGAGACAG
 2. **Read Alignment**: `bwa mem` paired end mapping
-3. **Read Filtering**: (1) `mapq_threshold` (2) only outward, self-overlapped PE reads `BEmodel_min_overlap` and `BEmodel_max_overlap`. 
+3. **Read Filtering**: (1) `mapq_threshold` (2) only outward, self-overlapped PE reads `min_overlap` and `max_overlap`. 
 4. **Cleavage Site Identification**: Mapped sites are analyzed to determine which represent high-quality cleavage sites. (Same algorithm as before, peak is identified in a `window_size`)
 5. **Off-target Identification**: Off-targets are identified by extending the cleavage site +/- `search_radius` and then fuzzy alignment to the on-target sequence `mismatch_threshold`. Gap penalty is 3 and mismatch penalty is 1. Output files are two. `identified_matched.txt` contains off-target sequences similar to on-target. `identified_unmatched.txt` contains off-target coordinates, sequences are not similar to on-target.
 6. **Visualization of Results**: Identified on-target and off-target cleavage sites are rendered as a color-coded alignment map for easy analysis of results. (Same algorithm as before)
@@ -61,8 +61,8 @@ Below is an example ``manifest.yaml`` file::
 	mismatch_threshold: 7
 	search_radius: 30
 	merged_analysis: False
-	BEmodel_min_overlap: 5
-	BEmodel_max_overlap: 15
+	min_overlap: 5
+	max_overlap: 15
 	BE_analysis: True
 
 	PAM: NRCH
@@ -105,7 +105,7 @@ When running the end-to-end analysis functionality of the CHANGEseq package a nu
 - `window_size`: Size of the sliding window, we recommend leaving it to the default value of 30.
 - `mapq_threshold`: Minimum read mapping quality score. 
 - `mismatch_threshold`: Number of tolerated distance in the fuzzy target search setp. We recommend leaving it to the default value of 7.
-- `BEmodel_min_overlap`, `BEmodel_max_overlap`: Assuming 1-10 positions are editable, the BEmodel_min_overlap and max should be 5 to 15.  For CBE, we use 6 to 16. For max sensitivity, users can do 0 to 20.
+- `min_overlap`, `max_overlap`: Assuming 1-10 positions are editable, the min_overlap and max should be 5 to 15.  For CBE, we use 6 to 16. For max sensitivity, users can do 0 to 20.
 - `search_radius`: Extend window center upstream and down-stream +/- search_radius bp, to look for off-target sequence.
 - `PAM`: PAM sequence, default is NGG.
 - `merged_analysis`: for BE, this is false
