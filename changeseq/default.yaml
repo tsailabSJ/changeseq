@@ -20,25 +20,21 @@ cutadapt: cutadapt
 # parallel
 njobs: 6
 
-# Analysis type
-merged_analysis: True
-
 
 # read filter
-mapq_threshold: 0
-BEmodel_min_overlap: 0
-BEmodel_max_overlap: 15
+mapq_threshold: 1
+min_overlap: 5
+max_overlap: 15
 
 
 # off-target calling
-read_threshold: 3
-AG_read: 1
+read_count_cutoff: 3
 
 
-mismatch_threshold: 6
+
+mismatch_threshold: 7
 window_size: 30
 start_threshold: 1
-gap_threshold: 30
 search_radius: 30
 
 
