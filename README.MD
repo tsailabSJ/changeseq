@@ -76,7 +76,7 @@ Below is an example ``manifest.yaml`` file::
     mapq_threshold: 50
     start_threshold: 1
     gap_threshold: 3
-    mismatch_threshold: 6
+    mismatch_threshold: 7
     search_radius: 30
     merged_analysis: True
     
@@ -124,7 +124,7 @@ When running the end-to-end analysis functionality of the CHANGEseq package a nu
 - `mapq_threshold`: Minimum read mapping quality score. We recommend leaving it to the default value of 50.
 - `start_threshold`: Tolerance for breakpoint location. We recommend leaving it to the default value of 1.
 - `gap_threshold`: Distance between breakpoints. We recommend leaving it to the default value of 3 for Cas9.
-- `mismatch_threshold`: Number of tolerated gaps in the fuzzy target search setp. We recommend leaving it to the default value of 6.
+- `mismatch_threshold`: Number of tolerated gaps in the fuzzy target search setp. We recommend leaving it to the default value of 7.
 - `read_length`: Fastq file read length, default is 151.
 - `PAM`: PAM sequence, default is NGG.
 - `genome`: used for homer peak annotation, e.g., hg19, hg38, mm9, or mm10.
