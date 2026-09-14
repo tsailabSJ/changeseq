@@ -40,7 +40,6 @@ singularity pull changeseq_1.2.9.1.sif docker://liyc1989/changeseq:1.2.9.1
 mkdir -p ~/changeseq_test && cd ~/changeseq_test
 
 singularity exec --cleanenv changeseq_1.2.9.1.sif cp -r /app/test/. .
-sed -i 's/^merged_analysis: True/search_radius: 30\nmerged_analysis: True/' CIRCLEseq_MergedTest.yaml
 singularity exec --cleanenv -B "$PWD:$PWD" changeseq_1.2.9.1.sif \
     changeseq.py all --manifest CIRCLEseq_MergedTest.yaml
 ```
@@ -84,9 +83,9 @@ changeseq.py -h
 
 ## Download Reference Genome
 
-The CHANGEseq package requires a reference genome for read mapping. You can use
-any genome of your choosing, **but the chromosome names in the FASTA must use the
-`chr` prefix** (`chr1`, `chr2`, ... `chrX`, `chrY`, `chrM`). 
+The CHANGEseq package requires a reference genome for read mapping. You can use any
+genome of your choosing, but note that **any chromosome or contig whose name contains
+an underscore (`_`) is skipped during off-target analysis.** To analyze every contig regardless of name, set in your manifest: `all_chromosomes: True`
 
 We recommend the UCSC builds:
 
@@ -161,10 +160,16 @@ When running the end-to-end analysis functionality of the CHANGEseq package a nu
 - `mapq_threshold`: Minimum read mapping quality score. We recommend leaving it to the default value of 50.
 - `start_threshold`: Tolerance for breakpoint location. We recommend leaving it to the default value of 1.
 - `gap_threshold`: Distance between breakpoints. We recommend leaving it to the default value of 3 for Cas9.
-- `search_radius`: Number of bases to extend on each side of an identified cleavage window when searching for the off-target. Default is 30.
-- `mismatch_threshold`: Number of tolerated gaps in the fuzzy target search setp. We recommend leaving it to the default value of 7.
+- `search_radius`: Number of bases to extend on each side of an identified cleavage window when searching for the off-target. Default is 20.
+- `mismatch_threshold`: Number of tolerated mismatch+gaps (one gap is counted as 3) in the fuzzy target search setp. We recommend leaving it to the default value of 7.
 - `read_length`: Fastq file read length, default is 151.
 - `PAM`: PAM sequence, default is NGG.
+- `all_chromosomes`: Whether to analyze every contig in the reference genome. By default
+  (`False`), any chromosome or contig whose name contains an underscore (`_`) is skipped
+  during cleavage-site tabulation — this drops the `_random`, `_alt`, and `chrUn_`
+  scaffolds in UCSC genomes. Set to `True` to disable the filter and analyze all contigs,
+  which is required for genomes using RefSeq/GenBank accession names such as
+  `NC_000001.11`. Default is False.
 - `genome`: used for homer peak annotation, e.g., hg19, hg38, mm9, or mm10.
 - `merged_analysis`: Whether or not the paired read merging step should take, default is True.
 - `samples`: Lists the samples you wish to analyze and the details for each. Each sample name should be nested under the top level samples key, and each sample detail should be nested under the sample name. See the sample manifest for an example.
