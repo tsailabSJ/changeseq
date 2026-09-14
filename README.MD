@@ -1,4 +1,5 @@
 
+
 [![Version][version-shield]][version-url]
 [![Python versions][python-shield]][python-url]
 [![Platforms][platform-shield]][python-url]
@@ -12,18 +13,45 @@ This is a repository for CHANGE-seq analytical software, which takes sample-spec
 
 This package implements a pipeline that takes in reads from the CHANGE-seq assay and returns detected cleavage sites as output. The individual pipeline steps are:
 
-1. **Merge**: Merge read1 an read2 for easier mapping to genome.
+1. **Merge**: Merge read1 and read2 for easier mapping to genome.
 2. **Read Alignment**: Merged paired end reads from the assay are aligned to the reference genome using the BWA-MEM algorithm with default parameters (Li. H, 2009).
 3. **Cleavage Site Identification**: Mapped sites are analyzed to determine which represent high-quality cleavage sites.
 4. **Visualization of Results**: Identified on-target and off-target cleavage sites are rendered as a color-coded alignment map for easy analysis of results.
 
+# Docker
+
+
+```
+mkdir -p ~/changeseq_test && cd ~/changeseq_test
+
+# 1. extract the bundled test data (it ships inside the image at /app/test)
+docker run --rm -v "$PWD:/data" liyc1989/changeseq:1.2.9.1 \
+    bash -c 'cp -r /app/test/* /data/'
+
+# 2. run the full pipeline
+docker run --rm -v "$PWD:/data" liyc1989/changeseq:1.2.9.1 \
+    changeseq.py all --manifest CIRCLEseq_MergedTest.yaml
+```
+
+# Singularity
+
+```
+singularity pull changeseq_1.2.9.1.sif docker://liyc1989/changeseq:1.2.9.1
+mkdir -p ~/changeseq_test && cd ~/changeseq_test
+
+singularity exec --cleanenv changeseq_1.2.9.1.sif cp -r /app/test/. .
+sed -i 's/^merged_analysis: True/search_radius: 30\nmerged_analysis: True/' CIRCLEseq_MergedTest.yaml
+singularity exec --cleanenv -B "$PWD:$PWD" changeseq_1.2.9.1.sif \
+    changeseq.py all --manifest CIRCLEseq_MergedTest.yaml
+```
+
 # Installation
 
-The most easiest way to install change-seq pipeline is via conda.
+The easiest way to install the change-seq pipeline is via conda.
 
 ```
 
-conda create -n changeseq -c conda-forge -c bioconda -c anaconda -c omnia -c tsailabSJ changeseq
+conda create -n changeseq -c conda-forge -c bioconda -c omnia -c tsailabSJ changeseq
 
 source activate changeseq
 
@@ -56,11 +84,20 @@ changeseq.py -h
 
 ## Download Reference Genome
 
-The CHANGEseq package requires a reference genome for read mapping. You can use any genome of your choosing, but for all of our testing and original CHANGE-seq analyses we use hg19 ([download](http://www.broadinstitute.org/ftp/pub/seq/references/Homo_sapiens_assembly19.fasta)). Be sure to (g)unzip the FASTA file before use if it is compressed.
+The CHANGEseq package requires a reference genome for read mapping. You can use
+any genome of your choosing, **but the chromosome names in the FASTA must use the
+`chr` prefix** (`chr1`, `chr2`, ... `chrX`, `chrY`, `chrM`). 
+
+We recommend the UCSC builds:
+
+- **hg19** (used for all original CHANGE-seq analyses and testing):
+  [hg19.fa.gz](https://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.fa.gz)
+- **hg38**:
+  [hg38.fa.gz](https://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.fa.gz)
 
 # Usage
 
-The change-seq pipeline requires a manifest yaml file specifying input files, output directory, and pipeline parameters. Once the yaml file is created, users can simply run ``change_seq.py all --manifest /path/to/manifest.yaml``
+The change-seq pipeline requires a manifest yaml file specifying input files, output directory, and pipeline parameters. Once the yaml file is created, users can simply run ``changeseq.py all --manifest /path/to/manifest.yaml``
 
 
 Below is an example ``manifest.yaml`` file::
@@ -116,7 +153,7 @@ changeseq.py all --manifest CIRCLEseq_MergedTest.yaml
 When running the end-to-end analysis functionality of the CHANGEseq package a number of inputs are required. To simplify the formatting of these inputs and to encourage reproducibility, these parameters are inputted into the pipeline via a manifest formatted as a YAML file. YAML files allow easy-to-read specification of key-value pairs. This allows us to easily specify our parameters. The following fields are required in the manifest:
 
 - `reference_genome`: The absolute path to the reference genome FASTA file.
-- `output_folder`: The absolute path to the folder in which all pipeline outputs will be saved.
+- `analysis_folder`: The absolute path to the folder in which all pipeline outputs will be saved.
 - `bwa`: The absolute path to the `bwa` executable
 - `samtools`: The absolute path to the `samtools` executable
 - `read_threshold`: The minimum number of reads at a location for that location to be called as a site. We recommend leaving it to the default value of 4.
@@ -124,11 +161,12 @@ When running the end-to-end analysis functionality of the CHANGEseq package a nu
 - `mapq_threshold`: Minimum read mapping quality score. We recommend leaving it to the default value of 50.
 - `start_threshold`: Tolerance for breakpoint location. We recommend leaving it to the default value of 1.
 - `gap_threshold`: Distance between breakpoints. We recommend leaving it to the default value of 3 for Cas9.
+- `search_radius`: Number of bases to extend on each side of an identified cleavage window when searching for the off-target. Default is 30.
 - `mismatch_threshold`: Number of tolerated gaps in the fuzzy target search setp. We recommend leaving it to the default value of 7.
 - `read_length`: Fastq file read length, default is 151.
 - `PAM`: PAM sequence, default is NGG.
 - `genome`: used for homer peak annotation, e.g., hg19, hg38, mm9, or mm10.
-- `merged_analysis`: Whether or not the paired read merging step should takingTrue
+- `merged_analysis`: Whether or not the paired read merging step should take, default is True.
 - `samples`: Lists the samples you wish to analyze and the details for each. Each sample name should be nested under the top level samples key, and each sample detail should be nested under the sample name. See the sample manifest for an example.
     - For each sample, you must provide the following parameters:
         - `target`: Target sequence for that sample. Accepts degenerate bases.
@@ -140,12 +178,12 @@ When running the end-to-end analysis functionality of the CHANGEseq package a nu
 
 
 # Pipeline Output
-When running the full pipeline, the results of each step are outputted to the `output_folder` in a separate folder for each step. The output folders and their respective contents are as follows:
+When running the full pipeline, the results of each step are outputted to the `analysis_folder` in a separate folder for each step. The output folders and their respective contents are as follows:
 
-- `output_folder/aligned`: Contains an alignment `.sam`, alignment `.bam`, sorted `bam`, and `.bai` index file for each sample.
-- `output_folder/fastq`: Merged `.fastq.gz` files for each sample.
-- `output_folder/identified`: Contains tab-delimited `.txt` files for each sample containing the identified DSBs, control DSBs, filtered DSBs, and read quantification.
-- `output_folder/visualization`: Contains a `.svg` vector image representing an alignment of all detected off-targets to the targetsite for each sample.
+- `analysis_folder/aligned`: Contains an alignment `.sam`, alignment `.bam`, sorted `bam`, and `.bai` index file for each sample.
+- `analysis_folder/fastq`: Merged `.fastq.gz` files for each sample.
+- `analysis_folder/identified`: Contains tab-delimited `.txt` files for each sample containing the identified DSBs, control DSBs, filtered DSBs, and read quantification.
+- `analysis_folder/visualization`: Contains a `.svg` vector image representing an alignment of all detected off-targets to the targetsite for each sample.
 
 # FAQ
 
