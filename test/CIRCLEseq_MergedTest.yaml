@@ -9,6 +9,7 @@ mapq_threshold: 50
 start_threshold: 1
 gap_threshold: 3
 mismatch_threshold: 6
+search_radius: 30
 merged_analysis: True
 
 samples:
